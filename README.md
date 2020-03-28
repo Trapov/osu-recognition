@@ -1,2 +1,2 @@
 # osu-recognition
-My Graduation project for Orenburug State University
+My Graduation project for Orenburg State University
