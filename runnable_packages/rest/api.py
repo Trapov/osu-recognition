@@ -1,5 +1,5 @@
 from fastapi import FastAPI, File, UploadFile, Query
-import uuid
+import uuid, logging.config
 from typing import List
 
 from infrastructure.storages import FileStorage, User
@@ -8,7 +8,10 @@ from infrastructure.images import get_ndarray_image
 
 from use_cases import create_or_get_user, get_paged_users
 
-app = FastAPI()
+app = FastAPI(title='REST-API. Recognition-Auth', version="1.0.0")
+
+from .logging_configuration import LOGGING
+logging.config.dictConfig(LOGGING)
 
 @app.post("/users")
 async def login_post(*, file: UploadFile  = File(...)):
