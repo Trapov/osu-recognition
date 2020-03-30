@@ -121,7 +121,6 @@ pip-selfcheck.json
 .idea/dynamic.xml
 .idea/uiDesigner.xml
 
-.vscode/
 features/
 
 # Gradle:

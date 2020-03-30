@@ -5,3 +5,5 @@ dependency-injector
 fastapi
 python-multipart
 uvicorn
+aiofiles
+pyjwt
