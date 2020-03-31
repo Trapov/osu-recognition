@@ -1,13 +1,13 @@
-from .persons_storage import PersonsStorage
-from .user import User
+from .user import User, UserFeatures, Feauture
 from .page import Page
 import abstractions.recognition
+import abstractions.storages
 
 from .grants_crypto import GrantsCrypto
 
 __all__ = [
     abstractions.recognition,
-    PersonsStorage,
+    abstractions.storages,
     GrantsCrypto,
-    User
+    User, UserFeatures, Feauture
 ]

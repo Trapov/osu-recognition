@@ -1,7 +1,10 @@
-from infrastructure.storages import FileStorage, User
 from infrastructure.container import ServicesContainer
 from infrastructure.images import get_ndarray_image
 ## todo: remove infrastructure, allow calling side to supply dependencies
+
+from abstractions.recognition import FaceDetector, FeatureExtractor, DistanceEstimator
+from abstractions.storages import FeaturesStorage, ImagesStorage, PersonFeatures
+from typing import List, Iterator
 
 import uuid, logging
 
@@ -10,33 +13,59 @@ class InputImage:
         self.bytes = image_bytes
         self.type = image_type
 
-async def handle(input_image : InputImage, container: ServicesContainer) -> User:
-    image_bytes = input_image.bytes
-    image_byte_array = get_ndarray_image(image_bytes)
-    faces = container.detector.detect(image_byte_array)
-    if len(faces) == 0:
-        raise Exception("No faces found")
-    features = container.extractor.extract(image_byte_array, faces)
-    if len(features) == 0:
-        raise Exception("Not features available for the face")
+class NoFacesFound(Exception):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
-    feature = next(f for f in features)
-    (user, distance) = await container.storage.neareset(feature=feature)
-    feature_vector_idx = uuid.uuid4()
+class NoFeaturesExtracted(Exception):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
-    if user: 
+async def handle(
+    input_image : InputImage,
+    face_detector: FaceDetector,
+    feature_extractor: FeatureExtractor,
+    features_storage: FeaturesStorage,
+    distance_estimator : DistanceEstimator,
+    images_storage: ImagesStorage) -> uuid.UUID:
+    
+    ndarray = get_ndarray_image(input_image.bytes)
+    detected_face_bboxes : [] = face_detector.detect(ndarray)
+
+    if len(detected_face_bboxes) == 0:
+        raise NoFacesFound()
+
+    extracted_features : [] = next(
+        iter(feature_extractor.extract(ndarray, detected_face_bboxes)), []
+    )
+
+    if len(extracted_features) == 0:
+        raise NoFeaturesExtracted()
+
+    features : List[PersonFeatures] = [feature async for feature in features_storage.enumerate()]
+
+    (person_id, min_distance) = next(
+        iter(
+            sorted(
+            [
+                (person_features.person_id, min(distance_estimator.distance([feature.feature for feature in person_features.features], extracted_features)))
+                for person_features in features
+            ], key=lambda t : t[1])
+        ),
+        (None, None)
+    )
+
+    if person_id and min_distance < 0.2:
+        if len(next(f for f in features if f.person_id == person_id).features) < 10 and min_distance > 0.0:
+            feature_id = uuid.uuid4()
+            await features_storage.save(person_id, feature_id, extracted_features.tobytes())
+            await images_storage.save(person_id, input_image.type, feature_id, input_image.bytes)
         
-        if user.features_count < 10 and distance > 0.0:
-            logging.debug(f'Saving user [{user.idx}] features with idx [{feature_vector_idx}]')
-            await container.storage.save(user.idx, feature_vector_idx, feature, image_bytes, input_image.type)
-        
-            return User(user.idx, user.features_count + 1, user.grants)
+        return person_id
 
-        return User(user.idx, user.features_count, user.grants)
+    feature_id = uuid.uuid4()
+    person_id = uuid.uuid4()
+    await features_storage.save(person_id, feature_id, extracted_features.tobytes())
+    await images_storage.save(person_id, input_image.type, feature_id, input_image.bytes)
 
-    idx = uuid.uuid4()
-    user = User(idx, 1, [])
-    logging.debug(f'Saving new user [{user.idx}] features with idx [{feature_vector_idx}]')
-    await container.storage.save(idx, feature_vector_idx, feature, image_bytes)
-
-    return user
+    return person_id

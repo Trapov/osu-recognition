@@ -1,11 +1,12 @@
-from infrastructure.container import ServicesContainer
-## todo: remove infrastructure, allow calling side to supply dependencies
+from abstractions import GrantsCrypto
+from abstractions.storages import GrantsStorage
 from uuid import UUID
 
-async def handle(user_id : UUID, container : ServicesContainer) -> str:
-    grants = await container.storage.get_grants(user_id)
+async def handle(user_id : UUID, grants_storage : GrantsStorage, grants_crypto: GrantsCrypto) -> str:
+    grants = next(iter([grant async for grant in grants_storage.enumerate(lambda person: person == str(user_id))]), None)
     
-    if len(grants) > 0:
-        return container.grants_crypto.to_token(user_id, grants)
+    if not grants or grants.grants:
+        raise Exception("No grants found. Nothing to authorize.")
     
-    raise Exception("No grants found. Nothing to authorize.")
+    return grants_crypto.to_token(user_id, grants)
+    

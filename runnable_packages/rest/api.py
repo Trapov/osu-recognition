@@ -4,7 +4,7 @@ import uuid, logging.config
 from uuid import UUID
 from typing import List
 from pydantic import BaseModel
-from infrastructure.storages import FileStorage, User
+from abstractions import User
 from infrastructure.container import SINGLETON_CONTAINER
 from infrastructure.images import get_ndarray_image
 
@@ -12,7 +12,7 @@ from use_cases import create_or_get_user, get_paged_users, to_token_grants
 
 
 app = FastAPI(title='REST-API. Recognition-Auth', version="1.0.0")
-app.mount('/users', StaticFiles(directory="./features"), 'person_faces')
+app.mount('/users', StaticFiles(directory="./features", check_dir=False), 'person_faces')
 
 from .logging_configuration import LOGGING
 logging.config.dictConfig(LOGGING)
@@ -22,7 +22,7 @@ class TokenIssue(BaseModel):
 
 @app.post("/tokens", tags=['tokens'])
 async def users_tokens_get(*, token_issue: TokenIssue) -> dict:
-    token = await to_token_grants.handle(token_issue.user_id, SINGLETON_CONTAINER)
+    token = await to_token_grants.handle(token_issue.user_id, SINGLETON_CONTAINER.grants_storage, SINGLETON_CONTAINER.grants_crypto)
     return {
         'token' : token
     }
@@ -33,16 +33,20 @@ async def login_post(*, file: UploadFile  = File(...)):
     img_bytes = await file.read()
     file_ext = file.filename.split('.')[-1]
 
-    user = await create_or_get_user.handle(create_or_get_user.InputImage(img_bytes, file_ext), SINGLETON_CONTAINER)
+    user_id = await create_or_get_user.handle(create_or_get_user.InputImage(img_bytes, file_ext),
+         SINGLETON_CONTAINER.detector, 
+         SINGLETON_CONTAINER.extractor,
+         SINGLETON_CONTAINER.features_storage,
+         SINGLETON_CONTAINER.distance_estimator,
+         SINGLETON_CONTAINER.images_storage)
+
     return {
-        'id': user.idx,
-        'features_count': user.features_count,
-        'grants': user.grants
+        'id': user_id
     }
 
 @app.get("/users", tags=['users'])
 async def users_get(*, offset: int = Query(0), count: int = Query(20)) -> List[User]:
-    users = await get_paged_users.handle(offset, count, SINGLETON_CONTAINER)
+    users = await get_paged_users.handle(offset, count, SINGLETON_CONTAINER.features_storage, SINGLETON_CONTAINER.images_storage, SINGLETON_CONTAINER.grants_storage)
     return {
         'offset': offset,
         'count': count,
@@ -50,7 +54,17 @@ async def users_get(*, offset: int = Query(0), count: int = Query(20)) -> List[U
         'values': [ 
             { 
                 'id': u.idx,
-                'features_count': u.features_count,
+                'features': {
+                    'count': u.features.count,
+                    'values': [
+                        { 
+                            'feature_id' : feature.idx,
+                            'image_name' : feature.image_name
+                        } 
+                        for feature in u.features.features
+                    ]
+                },
                 'grants': u.grants 
-            } for u in users.values ]
+            } for u in users.values 
+        ]
     }
