@@ -7,4 +7,4 @@ class DlibFeatureExtractor(FeatureExtractor):
         pass
 
     def extract(self, numpy_array: ndarray, faces: []) -> []:
-        return face_recognition.face_encodings(numpy_array, faces)
+        return face_recognition.face_encodings(numpy_array, faces, num_jitters=1, model='small')
