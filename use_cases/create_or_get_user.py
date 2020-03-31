@@ -29,6 +29,8 @@ async def handle(
     distance_estimator : DistanceEstimator,
     images_storage: ImagesStorage) -> uuid.UUID:
     
+    logger = logging.getLogger('use_case__create_or_get_user')
+
     ndarray = get_ndarray_image(input_image.bytes)
     detected_face_bboxes : [] = face_detector.detect(ndarray)
 
@@ -54,6 +56,9 @@ async def handle(
         ),
         (None, None)
     )
+
+    if person_id and min_distance:
+        logger.info(f'Distance to person[{person_id}] = [{min_distance}]')
 
     if person_id and min_distance < 0.2:
         if len(next(f for f in features if f.person_id == person_id).features) < 10 and min_distance > 0.0:
