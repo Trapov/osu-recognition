@@ -12,7 +12,7 @@ from use_cases import create_or_get_user, get_paged_users, to_token_grants
 
 
 app = FastAPI(title='REST-API. Recognition-Auth', version="1.0.0")
-app.mount('/users', StaticFiles(directory="./features", check_dir=False), 'person_faces')
+app.mount('/users', StaticFiles(directory="./images", check_dir=False), 'person_faces')
 
 from .logging_configuration import LOGGING
 logging.config.dictConfig(LOGGING)
