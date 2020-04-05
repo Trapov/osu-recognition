@@ -15,6 +15,10 @@ class Feature(object):
         return self.__idx
 
     @property
+    def image_type(self) -> str:
+        return self.__image_type
+
+    @property
     def image_name(self) -> str:
         return f'{self.__idx}.{self.__image_type}'
 

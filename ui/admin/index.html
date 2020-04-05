@@ -39,7 +39,7 @@
                     </v-text-field>
                     <v-list>
 
-                      <v-text-field counter v-if="addGrantDialog == item.id" append-icon="mdi-check" @click:append="addGrantDialog = null">
+                      <v-text-field counter v-if="addGrantDialog == item.id" v-model="addGrantModel" append-icon="mdi-check" @click:append="addGrant(item.id)">
                       </v-text-field>
 
                       <v-toolbar  v-else flat>
@@ -61,7 +61,7 @@
                           {{grant}}
                         </v-list-item-content>
                         <v-list-item-icon>
-                          <v-btn icon color="warn">
+                          <v-btn @click="deleteGrant(item.id, grant)" icon color="warn">
                             <v-icon>
                               mdi-delete
                             </v-icon>
@@ -104,248 +104,77 @@
       methods: {
         toUrl(item){
           return `/users/${item.id}/${item.features.values[0].image_name}`;
+        },
+
+        async refreshPage(){
+          const result = await fetch(`/users?offset=${this.usersPage.offset}&count=${this.usersPage.count}`);
+          const page = await result.json();
+          console.debug(page);
+          this.usersPage.total = page.total;
+          this.items = page.values;
+        },
+
+        async addGrant(userId){
+          try{
+            if(this.addGrantModel == '' || this.addGrantModel == null){
+              return;
+            }
+            const result = await fetch(`/grants`, {
+              method: 'POST',
+              headers: {
+                'Content-Type' : 'application/json'
+              },
+              body: JSON.stringify({
+                'user_id': userId,
+                'grant': this.addGrantModel
+              })
+            });
+            const user = this.items.find(p => p.id == userId);
+            user.grants.push(this.addGrantModel);
+          }
+          catch(exception){
+            console.error(exception)
+          }
+          finally{
+            this.addGrantDialog = null;
+            this.addGrantModel = null;
+          }
+        },
+
+        async deleteGrant(userId, grant){
+          try{
+            const result = await fetch(`/grants`, {
+              method: 'DELETE',
+              headers: {
+                'Content-Type' : 'application/json'
+              },
+              body: JSON.stringify({
+                'user_id': userId,
+                'grant': grant
+              })
+            });
+            var user = this.items.find(p => p.id === userId);
+            user.grants = user.grants.filter(ug => ug !== grant);
+          }
+          catch(exception){
+            console.error(exception)
+          }
         }
+      },
+      async mounted() {
+          await this.refreshPage();
       },
       data() {
         return {
+          usersPage: {
+            count: 10,
+            offset: 0,
+            total: 0
+          },
           addGrantDialog: null,
-          items: [
-    {
-      "id": "011408be-ae71-441a-b61c-3ea221d40082",
-      "features": {
-        "count": 1,
-        "values": [
-          {
-            "feature_id": "4f792e38-1bce-49bc-b781-c377b1bce24a",
-            "image_name": "4f792e38-1bce-49bc-b781-c377b1bce24a.jpg",
-            "created_at": "2020-04-05T12:53:32.115273"
-          }
-        ]
-      },
-      "grants": ['asdasd'],
-      "created_at": "2020-04-05T12:53:31.924025"
-    },
-    {
-      "id": "1294bd94-bbee-4efd-9e5f-edb7963ca29a",
-      "features": {
-        "count": 1,
-        "values": [
-          {
-            "feature_id": "80fb3737-58c9-41d6-be80-09f63cc491c3",
-            "image_name": "80fb3737-58c9-41d6-be80-09f63cc491c3.jpg",
-            "created_at": "2020-04-05T12:57:05.010890"
-          }
-        ]
-      },
-      "grants": [],
-      "created_at": "2020-04-05T12:57:04.830452"
-    },
-    {
-      "id": "134ede6b-add3-4a43-a947-00748520377c",
-      "features": {
-        "count": 1,
-        "values": [
-          {
-            "feature_id": "95c8b2e3-aaa8-4213-91cd-ac60f1ff21e5",
-            "image_name": "95c8b2e3-aaa8-4213-91cd-ac60f1ff21e5.jpg",
-            "created_at": "2020-04-05T12:50:03.277837"
-          }
-        ]
-      },
-      "grants": [],
-      "created_at": "2020-04-05T12:50:02.840771"
-    },
-    {
-      "id": "1626110d-59f7-4a5f-8a00-3eaea6ee5048",
-      "features": {
-        "count": 3,
-        "values": [
-          {
-            "feature_id": "a449b63a-c830-40fb-8023-5db80a66b759",
-            "image_name": "a449b63a-c830-40fb-8023-5db80a66b759.jpg",
-            "created_at": "2020-04-05T12:50:18.092853"
-          },
-          {
-            "feature_id": "cedec012-c226-4cf1-b712-ddfca6ee747a",
-            "image_name": "cedec012-c226-4cf1-b712-ddfca6ee747a.jpg",
-            "created_at": "2020-04-05T12:55:08.777973"
-          },
-          {
-            "feature_id": "d36f774a-d6c1-4a74-9d22-af1994bec3eb",
-            "image_name": "d36f774a-d6c1-4a74-9d22-af1994bec3eb.jpg",
-            "created_at": "2020-04-05T12:28:54.356513"
-          }
-        ]
-      },
-      "grants": [],
-      "created_at": "2020-04-05T12:28:53.605777"
-    },
-    {
-      "id": "1cc31674-5fe5-4b5b-a964-346c4643cf5a",
-      "features": {
-        "count": 1,
-        "values": [
-          {
-            "feature_id": "baeb440a-7b36-4ff7-8d17-43ec0da865fe",
-            "image_name": "baeb440a-7b36-4ff7-8d17-43ec0da865fe.jpg",
-            "created_at": "2020-04-05T13:03:52.402264"
-          }
-        ]
-      },
-      "grants": [],
-      "created_at": "2020-04-05T13:03:52.249257"
-    },
-    {
-      "id": "2a592472-a14a-4ef8-adad-307d39a3dfb6",
-      "features": {
-        "count": 1,
-        "values": [
-          {
-            "feature_id": "8793f7f4-374e-49e6-9962-3255a5774444",
-            "image_name": "8793f7f4-374e-49e6-9962-3255a5774444.jpg",
-            "created_at": "2020-04-05T12:56:03.387885"
-          }
-        ]
-      },
-      "grants": [],
-      "created_at": "2020-04-05T12:56:03.199443"
-    },
-    {
-      "id": "3a0ead41-6f4c-4db2-81cf-12a0720fb4e7",
-      "features": {
-        "count": 1,
-        "values": [
-          {
-            "feature_id": "c51fce40-26ad-4c63-a180-5a5cb386ab71",
-            "image_name": "c51fce40-26ad-4c63-a180-5a5cb386ab71.jpg",
-            "created_at": "2020-04-05T12:29:34.892555"
-          }
-        ]
-      },
-      "grants": [],
-      "created_at": "2020-04-05T12:29:34.050553"
-    },
-    {
-      "id": "3fb12bc1-6940-4a41-bde5-fe875b62947d",
-      "features": {
-        "count": 1,
-        "values": [
-          {
-            "feature_id": "2402dedf-ae7c-41be-b3b6-d1402356cc50",
-            "image_name": "2402dedf-ae7c-41be-b3b6-d1402356cc50.jpg",
-            "created_at": "2020-04-05T12:56:36.177051"
-          }
-        ]
-      },
-      "grants": [],
-      "created_at": "2020-04-05T12:56:36.002422"
-    },
-    {
-      "id": "62296ead-88ea-4734-a972-8766a91ccbff",
-      "features": {
-        "count": 1,
-        "values": [
-          {
-            "feature_id": "2b29ba0c-6690-45b4-a23b-1cd22dec8c62",
-            "image_name": "2b29ba0c-6690-45b4-a23b-1cd22dec8c62.jpg",
-            "created_at": "2020-04-05T12:52:18.490451"
-          }
-        ]
-      },
-      "grants": [],
-      "created_at": "2020-04-05T12:52:18.289028"
-    },
-    {
-      "id": "63c0b29a-4a73-4d85-831f-8986f18f886e",
-      "features": {
-        "count": 2,
-        "values": [
-          {
-            "feature_id": "4e23b76d-d6c5-4798-bb36-df37a0d06527",
-            "image_name": "4e23b76d-d6c5-4798-bb36-df37a0d06527.jpg",
-            "created_at": "2020-04-05T12:48:39.518609"
-          },
-          {
-            "feature_id": "6b74b626-6830-4848-aea3-834998dce5a5",
-            "image_name": "6b74b626-6830-4848-aea3-834998dce5a5.jpg",
-            "created_at": "2020-04-05T13:00:47.257398"
-          }
-        ]
-      },
-      "grants": [],
-      "created_at": "2020-04-05T12:48:39.124488"
-    },
-    {
-      "id": "a31c5f79-e419-4848-b51e-6746fb5c8a49",
-      "features": {
-        "count": 2,
-        "values": [
-          {
-            "feature_id": "d40548b1-53f1-4bc0-8cc5-a8b5ca563967",
-            "image_name": "d40548b1-53f1-4bc0-8cc5-a8b5ca563967.jpg",
-            "created_at": "2020-04-05T12:50:58.045327"
-          },
-          {
-            "feature_id": "e305e529-c6f7-4c54-9326-ad0450de0790",
-            "image_name": "e305e529-c6f7-4c54-9326-ad0450de0790.jpeg",
-            "created_at": "2020-04-05T13:05:16.528616"
-          }
-        ]
-      },
-      "grants": [],
-      "created_at": "2020-04-05T12:50:57.348273"
-    },
-    {
-      "id": "ab4e538b-848c-4bf9-89bf-788c86670746",
-      "features": {
-        "count": 1,
-        "values": [
-          {
-            "feature_id": "eb12ab24-0427-4c88-b9f3-5517a5b708fb",
-            "image_name": "eb12ab24-0427-4c88-b9f3-5517a5b708fb.jpg",
-            "created_at": "2020-04-05T13:06:18.357036"
-          }
-        ]
-      },
-      "grants": [],
-      "created_at": "2020-04-05T13:06:17.924053"
-    },
-    {
-      "id": "d326c68b-5133-4cdf-8a0f-f59471c30348",
-      "features": {
-        "count": 1,
-        "values": [
-          {
-            "feature_id": "c08765ce-4a85-4049-a15d-6d09f127c5d7",
-            "image_name": "c08765ce-4a85-4049-a15d-6d09f127c5d7.jpg",
-            "created_at": "2020-04-05T12:11:30.547123"
-          }
-        ]
-      },
-      "grants": [],
-      "created_at": "2020-04-05T12:11:30.174125"
-    },
-    {
-      "id": "ecca854a-246b-4d54-8f9f-f94a427b397c",
-      "features": {
-        "count": 2,
-        "values": [
-          {
-            "feature_id": "1bd87925-50a2-489f-b87d-ed903e0c6c80",
-            "image_name": "1bd87925-50a2-489f-b87d-ed903e0c6c80.jpg",
-            "created_at": "2020-04-05T13:04:37.694058"
-          },
-          {
-            "feature_id": "22fcdcc0-79eb-4eb5-9f79-108df0646e2b",
-            "image_name": "22fcdcc0-79eb-4eb5-9f79-108df0646e2b.jpg",
-            "created_at": "2020-04-05T13:05:40.354987"
-          }
-        ]
-      },
-      "grants": [],
-      "created_at": "2020-04-05T13:04:37.538053"
-    }
-  ]}
+          addGrantModel: null,
+          items: []
+        }
       },
     })
   </script>

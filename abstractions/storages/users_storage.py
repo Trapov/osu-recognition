@@ -16,7 +16,15 @@ class UsersStorage(ABC):
         ...
         
     @abstractmethod
+    async def save(self, user: User) -> None:
+        ...
+
+    @abstractmethod
     async def enumerate(self, offset: int = None, limit: int = None) -> AsyncIterator[User]:
+        ...
+
+    @abstractmethod
+    async def delete_grant(self, user_id: uuid.UUID, grant: str) -> None:
         ...
 
     @abstractmethod

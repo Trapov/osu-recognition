@@ -14,20 +14,24 @@ from datetime import datetime
 class SqliteFeaturesStorage(FeaturesStorage):
     def __init__(self, sqlite_file: str):
         self.__sqlite_file: str = sqlite_file
-        self.__read_pooled_connection : aiosqlite.Connection = None
+        self.__pooled_connection : aiosqlite.Connection = None
         asyncio.create_task(self.migrations()).add_done_callback(lambda _ : logging.info('Features migrations done'))
 
     async def save(self, user_id: uuid.UUID, feature_id: uuid.UUID, image_type: str, feature: bytes, created_at: datetime) -> None:
-        async with aiosqlite.connect(self.__sqlite_file) as db:
-            await db.execute('INSERT INTO "Feature" ("user_id", "feature_id", "image_type", "feature", "created_at") values(?, ?, ?, ?, ?)',
+        if not self.__pooled_connection:
+            self.__pooled_connection = await aiosqlite.connect(self.__sqlite_file)
+            self.__pooled_connection.row_factory = aiosqlite.Row
+
+            await self.__pooled_connection.execute('INSERT INTO "Feature" ("user_id", "feature_id", "image_type", "feature", "created_at") values(?, ?, ?, ?, ?)',
                  parameters=[str(user_id), str(feature_id), image_type, feature, str(created_at)])
-            await db.commit()
+            await self.__pooled_connection.commit()
 
     async def enumerate(self) -> AsyncIterator[UserFeatures]:
-        if not self.__read_pooled_connection:
-            self.__read_pooled_connection = await aiosqlite.connect(self.__sqlite_file)
+        if not self.__pooled_connection:
+            self.__pooled_connection = await aiosqlite.connect(self.__sqlite_file)
+            self.__pooled_connection.row_factory = aiosqlite.Row
 
-        async with self.__read_pooled_connection.execute('''
+        async with self.__pooled_connection.execute('''
                 select 
                     "user_id",
                     "feature_id",

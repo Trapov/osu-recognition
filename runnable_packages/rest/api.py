@@ -1,4 +1,5 @@
 from fastapi import FastAPI, File, UploadFile, Query, HTTPException
+from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
 import uuid, logging.config
 from uuid import UUID
@@ -8,8 +9,7 @@ from abstractions import User
 from infrastructure.container import SINGLETON_CONTAINER
 from infrastructure.images import get_ndarray_image
 
-from use_cases import create_or_get_user, get_paged_users, to_token_grants
-
+from use_cases import create_or_get_user, get_paged_users, to_token_grants, add_grants_for_user, remove_grants_for_user
 
 app = FastAPI(title='REST-API. Recognition-Auth', version="1.0.0")
 app.mount('/users', StaticFiles(directory="./images", check_dir=False), 'person_faces')
@@ -19,6 +19,10 @@ app.mount('/admin', StaticFiles(directory='./ui/admin', check_dir=True, html=Tru
 
 from .logging_configuration import LOGGING
 logging.config.dictConfig(LOGGING)
+
+class GrantsBinding(BaseModel):
+    user_id: UUID
+    grant: str
 
 class TokenIssue(BaseModel):
     user_id: UUID
@@ -32,6 +36,21 @@ async def users_tokens_get(*, token_issue: TokenIssue) -> dict:
     except to_token_grants.NoGrantsFound:
         raise HTTPException(status_code=422, detail='No grants found. Nothing to authorize. Create them first for the user your issued the token.')
 
+@app.post("/grants", tags=['grants'], status_code=201)
+async def grants_post(*, grant: GrantsBinding) -> dict:
+    try:
+        await add_grants_for_user.handle(grant.user_id, grant.grant, SINGLETON_CONTAINER.users_storage)
+        return Response(status_code=201)
+    except add_grants_for_user.UserNotFound:
+        raise HTTPException(status_code=404, detail='No user found. Create user first.')
+
+@app.delete("/grants", tags=['grants'], status_code=201)
+async def grants_delete(*, grant: GrantsBinding) -> dict:
+    try:
+        await remove_grants_for_user.handle(grant.user_id, grant.grant, SINGLETON_CONTAINER.users_storage)
+        return Response(status_code=201)
+    except add_grants_for_user.UserNotFound:
+        raise HTTPException(status_code=404, detail='No user found. Create user first.')
 
 @app.post("/users", tags=['users'], status_code=201)
 async def login_post(*, file: UploadFile  = File(...)):

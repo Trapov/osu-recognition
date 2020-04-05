@@ -5,6 +5,7 @@ from statistics import mean
 
 from abstractions.recognition import FaceDetector, FeatureExtractor, DistanceEstimator
 from abstractions.storages import FeaturesStorage, ImagesStorage, UsersStorage
+from abstractions import User, UserFeatures, Feature
 
 import uuid, logging
 import datetime
@@ -80,15 +81,44 @@ async def handle(
 
         if number_of_features < 11 and distance_to_closest_user <= threshold:
             feature_id = uuid.uuid4()
-            await features_storage.save(closest_user_id, feature_id, input_image.type, extracted_features.tobytes(), created_at=datetime.datetime.utcnow())
+
+            await users_storage.save(
+                User(
+                    idx=closest_user_id,
+                    user_features=UserFeatures(
+                        closest_user_id, features=[
+                            Feature(
+                                idx=feature_id,
+                                image_type=input_image.type,
+                                created_at=datetime.datetime.utcnow(),
+                                feature=extracted_features.tobytes())
+                        ]),
+                        grants=[],
+                        created_at=datetime.datetime.utcnow()
+                )
+            )
+            
             await images_storage.save(closest_user_id, input_image.type, feature_id, input_image.bytes)
 
             return closest_user_id
 
     feature_id = uuid.uuid4()
     closest_user_id = uuid.uuid4()
-    await users_storage.upsert(closest_user_id, created_at=datetime.datetime.utcnow())
-    await features_storage.save(closest_user_id, feature_id, input_image.type, extracted_features.tobytes(), created_at=datetime.datetime.utcnow())
+    await users_storage.save(
+        User(
+            idx=closest_user_id,
+            user_features=UserFeatures(
+                closest_user_id, features=[
+                    Feature(
+                        idx=feature_id,
+                        image_type=input_image.type,
+                        created_at=datetime.datetime.utcnow(),
+                        feature=extracted_features.tobytes())
+                ]),
+            grants=[],
+            created_at=datetime.datetime.utcnow()
+        )
+    )
     await images_storage.save(closest_user_id, input_image.type, feature_id, input_image.bytes)
 
     return closest_user_id

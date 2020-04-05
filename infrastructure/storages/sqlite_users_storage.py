@@ -14,24 +14,64 @@ import datetime
 class SqliteUsersStorage(UsersStorage):
     def __init__(self, sqlite_file: str):
         self.__sqlite_file: str = sqlite_file        
-        self.__read_pooled_connection : aiosqlite.Connection = None
+        self.__pooled_connection : aiosqlite.Connection = None
 
         asyncio.create_task(self.migrations()).add_done_callback(lambda _ : logging.info('Users migrations done'))
 
     async def upsert(self, user_id: uuid.UUID, created_at: datetime.datetime) -> None:
-        async with aiosqlite.connect(self.__sqlite_file) as db:
-            await db.execute('''
-                insert or ignore into "User" ("user_id", "created_at") values(?,?)
-            ''', parameters=[str(user_id), str(created_at)]
-            )
-            await db.commit()
+        if not self.__pooled_connection:
+            self.__pooled_connection = await aiosqlite.connect(self.__sqlite_file)
+            self.__pooled_connection.row_factory = aiosqlite.Row
+
+        await self.__pooled_connection.execute('''
+            insert or ignore into "User" ("user_id", "created_at") values(?,?)
+        ''', parameters=[str(user_id), str(created_at)]
+        )
+        await self.__pooled_connection.commit()
+
+    async def delete_grant(self, user_id: uuid.UUID, grant: str) -> None:
+        if not self.__pooled_connection:
+            self.__pooled_connection = await aiosqlite.connect(self.__sqlite_file)
+            self.__pooled_connection.row_factory = aiosqlite.Row
+
+        await self.__pooled_connection.execute('''
+            delete from "Grant"  
+            where "user_id"= ? and "grant" = ?
+        ''', parameters=[str(user_id), str(grant)]
+        )
+        await self.__pooled_connection.commit()
+
+    async def save(self, user: User) -> None:
+        if not self.__pooled_connection:
+            self.__pooled_connection = await aiosqlite.connect(self.__sqlite_file)
+            self.__pooled_connection.row_factory = aiosqlite.Row  
+        
+        await self.__pooled_connection.execute('''
+            insert or ignore into "User" ("user_id", "created_at") values(?,?)
+        ''', parameters=[str(user.idx), str(user.created_at)]
+        )
+
+        features = [(str(user.idx), str(f.idx), f.image_type, f.feature, str(f.created_at)) for f in user.features.features]
+        grants = [(str(user.idx), g, str(datetime.datetime.utcnow())) for g in user.grants]
+
+        if len(features) > 0:
+            await self.__pooled_connection.executemany('''
+                insert or ignore into "Feature" ("user_id", "feature_id", "image_type", "feature", "created_at") values(?, ?, ?, ?, ?)
+            ''', features)
+
+        if len(grants) > 0:
+            await self.__pooled_connection.executemany('''
+                insert or ignore into "Grant" ("user_id", "grant", "created_at") values(?, ?, ?)
+            ''', grants)
+
+        await self.__pooled_connection.commit()
 
     async def count(self) -> int:
-        if not self.__read_pooled_connection:
-            self.__read_pooled_connection = await aiosqlite.connect(self.__sqlite_file)
-            self.__read_pooled_connection.row_factory = aiosqlite.Row
+        if not self.__pooled_connection:
+            self.__pooled_connection = await aiosqlite.connect(self.__sqlite_file)
+            self.__pooled_connection.row_factory = aiosqlite.Row
 
-        async with self.__read_pooled_connection.execute('''
+        async with self.__pooled_connection.execute('''
             select count(1)
             from "User" p
             join "Feature" f on f."user_id" = p."user_id"
@@ -39,14 +79,14 @@ class SqliteUsersStorage(UsersStorage):
         ''') as cursor:
             return (await cursor.fetchone())[0]
 
-    async def single_no_features(self, user_id: uuid.UUID):
+    async def single_no_features(self, user_id: uuid.UUID) -> User:
         user = None
 
-        if not self.__read_pooled_connection:
-            self.__read_pooled_connection = await aiosqlite.connect(self.__sqlite_file)
-            self.__read_pooled_connection.row_factory = aiosqlite.Row
+        if not self.__pooled_connection:
+            self.__pooled_connection = await aiosqlite.connect(self.__sqlite_file)
+            self.__pooled_connection.row_factory = aiosqlite.Row
 
-        async with self.__read_pooled_connection.execute('''
+        async with self.__pooled_connection.execute('''
             select 
                 p."user_id",
                 f."feature_id",
@@ -57,8 +97,8 @@ class SqliteUsersStorage(UsersStorage):
                 p."created_at" as "user_created_at"
             from "User" p
             join "Feature" f on f."user_id" = p."user_id"
-            where p."user_id" = ?
             left join "Grant" g on g."user_id" = p."user_id"
+            where p."user_id" = ?
             order by p."user_id", p."created_at"
         ''', parameters=[str(user_id)]) as cursor:
             async for row in cursor:
@@ -73,18 +113,18 @@ class SqliteUsersStorage(UsersStorage):
                         uuid.UUID(row['feature_id']),
                         row['image_type'], 
                         datetime.datetime.fromisoformat(row['feature_created_at']), 
-                        []
+                        b''
                     )
                 )
 
         return user
 
     async def enumerate(self, offset: int = None, limit: int = None) -> AsyncIterator[User]:
-        if not self.__read_pooled_connection:
-            self.__read_pooled_connection = await aiosqlite.connect(self.__sqlite_file)
-            self.__read_pooled_connection.row_factory = aiosqlite.Row
+        if not self.__pooled_connection:
+            self.__pooled_connection = await aiosqlite.connect(self.__sqlite_file)
+            self.__pooled_connection.row_factory = aiosqlite.Row
 
-        async with self.__read_pooled_connection.execute('''
+        async with self.__pooled_connection.execute('''
             select 
                 p."user_id",
                 f."feature_id",
