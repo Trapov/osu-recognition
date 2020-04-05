@@ -2,6 +2,7 @@ from abstractions import GrantsCrypto
 from typing import List
 from uuid import UUID
 import jwt
+import datetime
 
 
 class JwtGrantsCrypto(GrantsCrypto):
@@ -10,6 +11,7 @@ class JwtGrantsCrypto(GrantsCrypto):
 
     def to_token(self, person_id: UUID, grants: List[str]) -> str:
         return jwt.encode({
-            'user_id': str(person_id),
+            'exp': datetime.datetime.utcnow() + datetime.timedelta(seconds=30),
+            'sub': str(person_id),
             'grants': grants
         }, self.__secret_key, algorithm='HS256')

@@ -37,6 +37,8 @@
                   <v-card-text>
                     <v-text-field readonly append-icon="date_range" v-model="item.created_at">
                     </v-text-field>
+                    <v-text-field readonly append-icon="face" v-model="item.features.count">
+                    </v-text-field>
                     <v-list>
 
                       <v-text-field counter v-if="addGrantDialog == item.id" v-model="addGrantModel" append-icon="mdi-check" @click:append="addGrant(item.id)">
