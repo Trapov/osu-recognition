@@ -14,6 +14,9 @@ from use_cases import create_or_get_user, get_paged_users, to_token_grants
 app = FastAPI(title='REST-API. Recognition-Auth', version="1.0.0")
 app.mount('/users', StaticFiles(directory="./images", check_dir=False), 'person_faces')
 
+app.mount('/client', StaticFiles(directory='./ui/client', check_dir=True, html=True), 'ui_client')
+app.mount('/admin', StaticFiles(directory='./ui/admin', check_dir=True, html=True), 'ui_admin')
+
 from .logging_configuration import LOGGING
 logging.config.dictConfig(LOGGING)
 
@@ -24,7 +27,7 @@ class TokenIssue(BaseModel):
 async def users_tokens_get(*, token_issue: TokenIssue) -> dict:
     try:
         return {
-            'token' : await to_token_grants.handle(token_issue.user_id, SINGLETON_CONTAINER.grants_storage, SINGLETON_CONTAINER.grants_crypto)
+            'token' : await to_token_grants.handle(token_issue.user_id, SINGLETON_CONTAINER.users_storage, SINGLETON_CONTAINER.grants_crypto)
         }
     except to_token_grants.NoGrantsFound:
         raise HTTPException(status_code=422, detail='No grants found. Nothing to authorize. Create them first for the user your issued the token.')
@@ -42,6 +45,7 @@ async def login_post(*, file: UploadFile  = File(...)):
             SINGLETON_CONTAINER.extractor,
             SINGLETON_CONTAINER.features_storage,
             SINGLETON_CONTAINER.distance_estimator,
+            SINGLETON_CONTAINER.users_storage,
             SINGLETON_CONTAINER.images_storage)
         return {
             'id': user_id
@@ -54,7 +58,7 @@ async def login_post(*, file: UploadFile  = File(...)):
 
 @app.get("/users", tags=['users'], status_code=200)
 async def users_get(*, offset: int = Query(0), count: int = Query(20)) -> List[User]:
-    users = await get_paged_users.handle(offset, count, SINGLETON_CONTAINER.features_storage, SINGLETON_CONTAINER.images_storage, SINGLETON_CONTAINER.grants_storage)
+    users = await get_paged_users.handle(offset, count, SINGLETON_CONTAINER.users_storage)
     return {
         'offset': offset,
         'count': count,
@@ -67,12 +71,14 @@ async def users_get(*, offset: int = Query(0), count: int = Query(20)) -> List[U
                     'values': [
                         { 
                             'feature_id' : feature.idx,
-                            'image_name' : feature.image_name
+                            'image_name' : feature.image_name,
+                            'created_at': feature.created_at
                         } 
                         for feature in u.features.features
                     ]
                 },
-                'grants': u.grants 
+                'grants': u.grants,
+                'created_at': u.created_at
             } for u in users.values 
         ]
     }

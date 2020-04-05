@@ -1,9 +1,9 @@
-from .file_features_storage import FileFeaturesStorage
-from .file_grants_storage import FileGrantsStorage
+from .sqlite_users_storage import SqliteUsersStorage
 from .file_images_storage import FileImagesStorage
+from .sqlite_features_storage import SqliteFeaturesStorage
 
 __all__ = [
-    FileFeaturesStorage,
-    FileGrantsStorage,
+    SqliteUsersStorage,
+    SqliteFeaturesStorage,
     FileImagesStorage
 ]

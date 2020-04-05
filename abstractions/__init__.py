@@ -1,4 +1,4 @@
-from .user import User, UserFeatures, Feauture
+from .user import User, UserFeatures, Feature
 from .page import Page
 import abstractions.recognition
 import abstractions.storages
@@ -9,5 +9,5 @@ __all__ = [
     abstractions.recognition,
     abstractions.storages,
     GrantsCrypto,
-    User, UserFeatures, Feauture
+    User, UserFeatures, Feature
 ]

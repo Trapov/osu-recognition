@@ -1,13 +1,10 @@
-from .features_storage import FeaturesStorage, PersonFeatures, Feature
-from .grants_storage import GrantsStorage, PersonGrants
-from .images_storage import ImagesStorage, PersonImages
+from .features_storage import FeaturesStorage, Feature
+from .images_storage import ImagesStorage
+from .users_storage import UsersStorage
 
 __all__ = [
+    UsersStorage,
     FeaturesStorage,
-    PersonFeatures,
     Feature,
-    GrantsStorage,
-    PersonGrants,
     ImagesStorage,
-    PersonImages
 ]
