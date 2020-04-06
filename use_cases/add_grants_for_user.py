@@ -13,6 +13,10 @@ async def handle(
         users_storage: UsersStorage) -> None:
     
     user : User = await users_storage.single_no_features(user_id=user_id)
+    
+    if grant in user.grants:
+        return
+        
     if not user:
         raise UserNotFound()
 

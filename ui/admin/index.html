@@ -12,77 +12,66 @@
     <v-app>
       <v-content>
         <v-container fluid>
+
+          <v-row align="center" justify="center">
+            <v-btn @click="goBack()" v-if="canGoBack()" icon>
+              <v-icon>
+                mdi-arrow-left
+              </v-icon>
+            </v-btn>
+            <v-btn @click="goForward()" v-if="canGoForward()" icon>
+              <v-icon>
+                mdi-arrow-right
+              </v-icon>
+            </v-btn>
+          </v-row>
+
           <v-data-iterator
-            :items="items"
+            :loading="loading"
+            :items="usersPage.items"
             :hide-default-footer="true"
           >
-          <template v-slot:default="{ items }">
-            <v-row>
-              <v-col
-              cols="12"
-              sm="6"
-              md="4"
-              lg="3"
-                v-for="item in items"
-                :key="item.id"
-              >
-                <v-card>
-                  <v-img :src="toUrl(item)"       
-                  class="white--text align-end"
-                  height="200px">
-                    <v-card-title>
-                      {{item.id}}
-                    </v-card-title>
-                  </v-img>
-                  <v-card-text>
-                    <v-text-field readonly append-icon="date_range" v-model="item.created_at">
-                    </v-text-field>
-                    <v-text-field readonly append-icon="face" v-model="item.features.count">
-                    </v-text-field>
-                    <v-list>
-
-                      <v-text-field counter v-if="addGrantDialog == item.id" v-model="addGrantModel" append-icon="mdi-check" @click:append="addGrant(item.id)">
-                      </v-text-field>
-
-                      <v-toolbar  v-else flat>
-
-                        <v-toolbar-title>
-                          <span >
-                            Grants
-                          </span>
-                        </v-toolbar-title>
-                        <v-spacer></v-spacer>
-
-                        <v-btn @click="addGrantDialog = item.id" icon light>
-                          <v-icon color="grey darken-2">mdi-plus</v-icon>
-                        </v-btn>
-
-                      </v-toolbar>
-                      <v-list-item @click="" v-for="grant in item.grants" :key="grant">
-                        <v-list-item-content>
-                          {{grant}}
-                        </v-list-item-content>
-                        <v-list-item-icon>
-                          <v-btn @click="deleteGrant(item.id, grant)" icon color="warn">
-                            <v-icon>
-                              mdi-delete
-                            </v-icon>
-                          </v-btn>
-                        </v-list-item-icon>
-                      </v-list-item>
-                    </v-list>
-                  </v-card-text>
-                </v-card>
-              </v-col>
-            </v-row>
-          </template>
+            <template v-slot:default="{ items }">
+              <v-row>
+                <v-col
+                  cols="12"
+                  sm="6"
+                  md="4"
+                  lg="3"
+                  v-for="item in items"
+                  :key="item.id"
+                >
+                
+                  <user-card :item="item"/>
+                </v-col>
+              </v-row>
+            </template>
           </v-data-iterator>
+          <v-row align="center" justify="center">
+            <v-btn @click="goBack()" v-if="canGoBack()" icon>
+              <v-icon>
+                mdi-arrow-left
+              </v-icon>
+            </v-btn>
+            <v-btn @click="goForward()" v-if="canGoForward()" icon>
+              <v-icon>
+                mdi-arrow-right
+              </v-icon>
+            </v-btn>
+          </v-row>
         </v-container>
 
         <v-bottom-navigation
           app
-          v-model="bottomNav"
         >
+          <v-progress-linear
+            :active="loading"
+            :indeterminate="loading"
+            absolute
+            top
+            color="deep-purple accent-4"
+          ></v-progress-linear>
+
           <v-btn value="recent">
             <span>Users</span>
             <v-icon>face</v-icon>
@@ -99,86 +88,6 @@
 
   <script src="https://cdn.jsdelivr.net/npm/vue@2.x/dist/vue.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
-  <script>
-    new Vue({
-      el: '#app',
-      vuetify: new Vuetify(),
-      methods: {
-        toUrl(item){
-          return `/users/${item.id}/${item.features.values[0].image_name}`;
-        },
-
-        async refreshPage(){
-          const result = await fetch(`/users?offset=${this.usersPage.offset}&count=${this.usersPage.count}`);
-          const page = await result.json();
-          console.debug(page);
-          this.usersPage.total = page.total;
-          this.items = page.values;
-        },
-
-        async addGrant(userId){
-          try{
-            if(this.addGrantModel == '' || this.addGrantModel == null){
-              return;
-            }
-            const result = await fetch(`/grants`, {
-              method: 'POST',
-              headers: {
-                'Content-Type' : 'application/json'
-              },
-              body: JSON.stringify({
-                'user_id': userId,
-                'grant': this.addGrantModel
-              })
-            });
-            const user = this.items.find(p => p.id == userId);
-            user.grants.push(this.addGrantModel);
-          }
-          catch(exception){
-            console.error(exception)
-          }
-          finally{
-            this.addGrantDialog = null;
-            this.addGrantModel = null;
-          }
-        },
-
-        async deleteGrant(userId, grant){
-          try{
-            const result = await fetch(`/grants`, {
-              method: 'DELETE',
-              headers: {
-                'Content-Type' : 'application/json'
-              },
-              body: JSON.stringify({
-                'user_id': userId,
-                'grant': grant
-              })
-            });
-            var user = this.items.find(p => p.id === userId);
-            user.grants = user.grants.filter(ug => ug !== grant);
-          }
-          catch(exception){
-            console.error(exception)
-          }
-        }
-      },
-      async mounted() {
-          await this.refreshPage();
-      },
-      data() {
-        return {
-          usersPage: {
-            count: 10,
-            offset: 0,
-            total: 0
-          },
-          addGrantDialog: null,
-          addGrantModel: null,
-          items: []
-        }
-      },
-    })
-  </script>
+  <script type="module" src="./main.js" ></script>
 </body>
 </html>

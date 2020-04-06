@@ -36,7 +36,7 @@ async def handle(
         users_storage: UsersStorage,
         images_storage: ImagesStorage) -> uuid.UUID:
     logger = logging.getLogger('use_case__create_or_get_user')
-    ndarray_resized = resize_ndarray(get_ndarray_image(input_image.bytes))
+    ndarray_resized = resize_ndarray(get_ndarray_image(input_image.bytes), (0.3, 0.3))
 
     logger.debug('Detecting faces.')
 
@@ -76,7 +76,7 @@ async def handle(
 
     if closest_user_id:
         logger.info(f'Distance to user[{closest_user_id}] = [{distance_to_closest_user}]')
-        threshold = 0.5 - (0.03 * number_of_features)
+        threshold = 0.64 - (0.03 * number_of_features)
         logger.info(f'Current threshold [{threshold}]')
 
         if number_of_features < 11 and distance_to_closest_user <= threshold:

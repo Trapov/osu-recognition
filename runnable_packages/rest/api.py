@@ -20,6 +20,10 @@ app.mount('/admin', StaticFiles(directory='./ui/admin', check_dir=True, html=Tru
 from .logging_configuration import LOGGING
 logging.config.dictConfig(LOGGING)
 
+import mimetypes
+mimetypes.add_type('text/css', '.css')
+mimetypes.add_type('application/javascript', '.js')
+
 class GrantsBinding(BaseModel):
     user_id: UUID
     grant: str
@@ -58,7 +62,6 @@ async def login_post(*, file: UploadFile  = File(...)):
     file_ext = file.filename.split('.')[-1]
 
     try:
-
         user_id = await create_or_get_user.handle(create_or_get_user.InputImage(img_bytes, file_ext),
             SINGLETON_CONTAINER.detector, 
             SINGLETON_CONTAINER.extractor,

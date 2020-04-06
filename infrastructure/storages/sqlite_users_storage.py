@@ -72,7 +72,7 @@ class SqliteUsersStorage(UsersStorage):
             self.__pooled_connection.row_factory = aiosqlite.Row
 
         async with self.__pooled_connection.execute('''
-            select count(1)
+            select count(distinct p."user_id")
             from "User" p
             join "Feature" f on f."user_id" = p."user_id"
             left join "Grant" g on g."user_id" = p."user_id"
@@ -97,7 +97,7 @@ class SqliteUsersStorage(UsersStorage):
                 p."created_at" as "user_created_at"
             from "User" p
             join "Feature" f on f."user_id" = p."user_id"
-            left join "Grant" g on g."user_id" = p."user_id"
+            left outer join "Grant" g on g."user_id" = p."user_id"
             where p."user_id" = ?
             order by p."user_id", p."created_at"
         ''', parameters=[str(user_id)]) as cursor:
@@ -105,7 +105,7 @@ class SqliteUsersStorage(UsersStorage):
                 if not user:
                     user = User(idx=user_id, user_features=UserFeatures(user_id, features=[]), grants=[], created_at=datetime.datetime.fromisoformat(row['user_created_at']))
 
-                if row['grant']:
+                if row['grant'] and not(row['grant'] in user.grants):
                     user.grants.append(row['grant'])
 
                 user.features.features.append(
@@ -133,11 +133,16 @@ class SqliteUsersStorage(UsersStorage):
                 g."grant",
                 g."created_at" as "grant_created_at",
                 p."created_at" as "user_created_at"
-            from "User" p
-            join "Feature" f on f."user_id" = p."user_id"
-            left join "Grant" g on g."user_id" = p."user_id"
+            from (
+                select 
+                    "user_id",
+                    "created_at" 
+                from "User" 
+                order by "user_id", "created_at"
+                limit ? offset ?) p
+            left outer join "Feature" f on f."user_id" = p."user_id"
+            left outer join "Grant" g on g."user_id" = p."user_id"
             order by p."user_id", p."created_at"
-            limit ? offset ?
         ''', parameters=[limit, offset]) as cursor:
             current_user_features: User = None
             async for row in cursor:
@@ -149,7 +154,7 @@ class SqliteUsersStorage(UsersStorage):
                     yield current_user_features
                     current_user_features = User(row_user_id, UserFeatures(row_user_id, []), grants=[], created_at=datetime.datetime.fromisoformat(row['user_created_at']))
 
-                if row['grant']:
+                if row['grant'] and not(row['grant'] in current_user_features.grants):
                     current_user_features.grants.append(
                         row['grant']   
                     )
