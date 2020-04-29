@@ -1,4 +1,5 @@
-from fastapi import FastAPI, File, UploadFile, Query, HTTPException
+from fastapi import FastAPI, File, UploadFile, Query, HTTPException, Depends
+from fastapi.security import HTTPBearer
 from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
 import uuid, logging.config
@@ -9,7 +10,9 @@ from abstractions import User
 from infrastructure.container import SINGLETON_CONTAINER
 from infrastructure.images import get_ndarray_image
 
-from use_cases import create_or_get_user, get_paged_users, to_token_grants, add_grants_for_user, remove_grants_for_user
+from use_cases import create_or_get_user, get_paged_users, to_token_grants, add_grants_for_user, remove_grants_for_user, get_single_user_from_token
+
+bearer = HTTPBearer()
 
 app = FastAPI(title='REST-API. Recognition-Auth', version="1.0.0")
 app.mount('/users', StaticFiles(directory="./images", check_dir=False), 'person_faces')
@@ -69,8 +72,11 @@ async def login_post(*, file: UploadFile  = File(...)):
             SINGLETON_CONTAINER.distance_estimator,
             SINGLETON_CONTAINER.users_storage,
             SINGLETON_CONTAINER.images_storage)
+
+        token = await to_token_grants.handle(user_id, SINGLETON_CONTAINER.users_storage, SINGLETON_CONTAINER.grants_crypto)
+        
         return {
-            'id': user_id
+            'token': token
         }
 
     except create_or_get_user.NoFacesFound:
@@ -103,4 +109,27 @@ async def users_get(*, offset: int = Query(0), count: int = Query(20)) -> List[U
                 'created_at': u.created_at
             } for u in users.values 
         ]
+    }
+
+@app.get("/me", tags=['user'], status_code=200)
+async def user_get_me(*, token: HTTPBearer = Depends(bearer)) -> User:
+    user = await get_single_user_from_token.handle(token=token.credentials, users_storage=SINGLETON_CONTAINER.users_storage, grants_crypto=SINGLETON_CONTAINER.grants_crypto)
+    if not user:
+        raise HTTPException(401, 'Not authorized')
+    
+    return {
+        'id': user.idx,
+        'features': {
+            'count': user.features.count,
+            'values': [
+                { 
+                    'feature_id' : feature.idx,
+                    'image_name' : feature.image_name,
+                    'created_at': feature.created_at
+                } 
+                for feature in user.features.features
+            ]
+        },
+        'grants': user.grants,
+        'created_at': user.created_at
     }

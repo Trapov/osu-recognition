@@ -12,7 +12,12 @@
     <v-app>
       <v-content >
         <v-container class="fill-height">
-            <web-cam />
+
+          <user-card :user="user" v-if="user" >
+          </user-card>
+          <web-cam @token-obtained="token=$event.token" v-else>
+          </web-cam>
+
         </v-container>
       </v-content>
     </v-app>

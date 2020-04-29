@@ -70,7 +70,6 @@ const vue = new Vue({
         this.loading = true;
         const result = await fetch(`/users?offset=${newOffset}&count=${this.usersPage.count}`);
         const page = await result.json();
-        // console.debug(page);
 
         this.usersPage.offset = newOffset;
         this.usersPage.total = page.total;

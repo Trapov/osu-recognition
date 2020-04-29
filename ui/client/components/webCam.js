@@ -10,7 +10,7 @@ export default {
         </v-select>
       </v-row>
       <v-row v-if="deviceId" align="center" justify="space-around">
-        <v-card @click="signIn(null)">
+        <v-card :loading="loading" @click="signIn(null)">
           <video
             ref="video"
             :width="width"
@@ -58,6 +58,7 @@ export default {
   },
   data() {
     return {
+      loading: false,
       deviceId: null,
       source: null,
       canvas: null,
@@ -205,14 +206,20 @@ export default {
     },
 
     async obtainToken(blob) {
-      var formData = new FormData();
-      formData.append('file', blob, 'image.png');
-      const result = await fetch('/users', {
-        method: 'POST',
-        body: formData
-      });
+      try{
+        this.loading = true;
+        var formData = new FormData();
+        formData.append('file', blob, 'image.png');
+        const result = await fetch('/users', {
+          method: 'POST',
+          body: formData
+        });
+  
+        this.$emit('token-obtained', await result.json());
+      } finally{
+        this.loading = false;
+      }
 
-      console.log(await result.json());
     },
 
     /**
