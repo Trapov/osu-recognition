@@ -108,7 +108,8 @@ const UserCard = {
           const result = await fetch(`/grants`, {
             method: 'POST',
             headers: {
-              'Content-Type' : 'application/json'
+              'Content-Type' : 'application/json',
+              'Authorization': `Bearer ${this.adminToken}`
             },
             body: JSON.stringify({
               'user_id': this.item.id,
@@ -133,7 +134,8 @@ const UserCard = {
           const result = await fetch(`/grants`, {
             method: 'DELETE',
             headers: {
-              'Content-Type' : 'application/json'
+              'Content-Type' : 'application/json',
+              'Authorization': `Bearer ${this.adminToken}`
             },
             body: JSON.stringify({
               'user_id': this.item.id,
@@ -151,7 +153,8 @@ const UserCard = {
       }    
     },
     props: [
-      'item'
+      'item',
+      'adminToken'
     ]
 }
 

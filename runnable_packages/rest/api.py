@@ -2,6 +2,7 @@ from fastapi import FastAPI, File, UploadFile, Query, HTTPException, Depends
 from fastapi.security import HTTPBearer
 from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
+from os import environ
 import uuid, logging.config
 from uuid import UUID
 from typing import List
@@ -34,26 +35,25 @@ class GrantsBinding(BaseModel):
 class TokenIssue(BaseModel):
     user_id: UUID
 
-@app.post("/tokens", tags=['tokens'], status_code=201)
-async def users_tokens_get(*, token_issue: TokenIssue) -> dict:
-    try:
-        return {
-            'token' : await to_token_grants.handle(token_issue.user_id, SINGLETON_CONTAINER.users_storage, SINGLETON_CONTAINER.grants_crypto)
-        }
-    except to_token_grants.NoGrantsFound:
-        raise HTTPException(status_code=422, detail='No grants found. Nothing to authorize. Create them first for the user your issued the token.')
+ADMIN_TOKEN = environ.get('ADMIN_TOKEN', 'HACK')
 
 @app.post("/grants", tags=['grants'], status_code=201)
-async def grants_post(*, grant: GrantsBinding) -> dict:
+async def grants_post(*, token: HTTPBearer = Depends(bearer), grant: GrantsBinding) -> dict:
     try:
+        if token.credentials != ADMIN_TOKEN:
+            raise HTTPException(401, 'Not authorized')
+
         await add_grants_for_user.handle(grant.user_id, grant.grant, SINGLETON_CONTAINER.users_storage)
         return Response(status_code=201)
     except add_grants_for_user.UserNotFound:
         raise HTTPException(status_code=404, detail='No user found. Create user first.')
 
 @app.delete("/grants", tags=['grants'], status_code=201)
-async def grants_delete(*, grant: GrantsBinding) -> dict:
+async def grants_delete(*, token: HTTPBearer = Depends(bearer), grant: GrantsBinding) -> dict:
     try:
+        if token.credentials != ADMIN_TOKEN:
+            raise HTTPException(401, 'Not authorized')
+
         await remove_grants_for_user.handle(grant.user_id, grant.grant, SINGLETON_CONTAINER.users_storage)
         return Response(status_code=201)
     except add_grants_for_user.UserNotFound:
@@ -85,7 +85,12 @@ async def login_post(*, file: UploadFile  = File(...)):
         raise HTTPException(status_code=400, detail='Faces found, but no features extracted from the face, Try contacting the support.')
 
 @app.get("/users", tags=['users'], status_code=200)
-async def users_get(*, offset: int = Query(0), count: int = Query(20)) -> List[User]:
+async def users_get(*, token: HTTPBearer = Depends(bearer), offset: int = Query(0), count: int = Query(20)) -> List[User]:
+
+    if token.credentials != ADMIN_TOKEN:
+        raise HTTPException(401, 'Not authorized')
+
+
     users = await get_paged_users.handle(offset, count, SINGLETON_CONTAINER.users_storage)
     return {
         'offset': offset,
@@ -126,7 +131,7 @@ async def user_get_me(*, token: HTTPBearer = Depends(bearer)) -> User:
                     'feature_id' : feature.idx,
                     'image_name' : feature.image_name,
                     'created_at': feature.created_at
-                } 
+                }
                 for feature in user.features.features
             ]
         },

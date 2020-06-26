@@ -10,9 +10,8 @@
 <body>
   <div id="app">
     <v-app>
-      <v-content>
-        <v-container fluid>
-
+      <v-main>
+        <v-container fluid v-if="currentPage=='users'">
           <v-row align="center" justify="center">
             <v-btn @click="goBack()" v-if="canGoBack()" icon>
               <v-icon>
@@ -42,7 +41,7 @@
                   :key="item.id"
                 >
                 
-                  <user-card :item="item"/>
+                  <user-card :item="item" :admin-token="adminToken" />
                 </v-col>
               </v-row>
             </template>
@@ -60,8 +59,42 @@
             </v-btn>
           </v-row>
         </v-container>
+        <v-container fluid fill-height v-if="currentPage=='options'">
+          <v-row no-gutters align="center" justify="center">
+            <div
+              class="text-xs-h3 text-md-h2 text-xl-h1"
+            >
+              There <span class="font-weight-bold">will</span> be options in the future . . .
+            </div>
+          </v-row>
+        </v-container>
+
+        <v-container fluid fill-height v-if="currentPage=='auth'">
+          <v-row no-gutters align="center" justify="center">
+            <v-card>
+              <v-col>
+                <v-row>
+                  <v-card-text>
+                    <v-text-field
+                      label="Type your token"
+                      v-model="adminToken"
+                    />
+                  </v-card-text>
+                </v-row>
+                <v-row align="center" justify="center">
+                  <v-card-actions>
+                    <v-btn v-if="adminToken" @click="goToUsers()">
+                      Sign in
+                    </v-btn>
+                  </v-card-actions>
+                </v-row>
+              </v-col>
+            </v-card>
+          </v-row>
+        </v-container>
 
         <v-bottom-navigation
+          v-if="currentPage!='auth'"
           app
         >
           <v-progress-linear
@@ -72,17 +105,17 @@
             color="deep-purple accent-4"
           ></v-progress-linear>
 
-          <v-btn value="recent">
+          <v-btn @click="goToUsers()" value="recent">
             <span>Users</span>
             <v-icon>face</v-icon>
           </v-btn>
       
-          <v-btn value="favorites">
+          <v-btn @click="goToOptions()" value="favorites">
             <span>Options</span>
             <v-icon>tune</v-icon>
           </v-btn>
         </v-bottom-navigation>
-      </v-content>
+      </v-main>
     </v-app>
   </div>
 
