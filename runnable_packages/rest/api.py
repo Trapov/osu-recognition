@@ -37,6 +37,18 @@ class TokenIssue(BaseModel):
 
 ADMIN_TOKEN = environ.get('ADMIN_TOKEN', 'HACK')
 
+@app.post("/tokens", tags=['tokens'], status_code=201)
+async def users_tokens_get(*, token: HTTPBearer = Depends(bearer), token_issue: TokenIssue) -> dict:
+    try:
+        if token.credentials != ADMIN_TOKEN:
+            raise HTTPException(401, 'Not authorized')
+
+        return {
+            'token' : await to_token_grants.handle(token_issue.user_id, SINGLETON_CONTAINER.users_storage, SINGLETON_CONTAINER.grants_crypto)
+        }
+    except to_token_grants.NoGrantsFound:
+        raise HTTPException(status_code=422, detail='No grants found. Nothing to authorize. Create them first for the user your issued the token.')
+
 @app.post("/grants", tags=['grants'], status_code=201)
 async def grants_post(*, token: HTTPBearer = Depends(bearer), grant: GrantsBinding) -> dict:
     try:

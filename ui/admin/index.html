@@ -69,26 +69,22 @@
           </v-row>
         </v-container>
 
-        <v-container fluid fill-height v-if="currentPage=='auth'">
-          <v-row no-gutters align="center" justify="center">
+        <v-container fill-height v-if="currentPage=='auth'">
+          <v-row align="center" justify="center">
             <v-card>
-              <v-col>
-                <v-row>
-                  <v-card-text>
-                    <v-text-field
-                      label="Type your token"
-                      v-model="adminToken"
-                    />
-                  </v-card-text>
-                </v-row>
-                <v-row align="center" justify="center">
-                  <v-card-actions>
-                    <v-btn v-if="adminToken" @click="goToUsers()">
-                      Sign in
-                    </v-btn>
-                  </v-card-actions>
-                </v-row>
-              </v-col>
+              <v-card-title>
+                Sign-in
+              </v-card-title>
+              <v-card-text>
+                <v-text-field clearable solo-inverted
+                v-model="adminToken"
+              ></v-text-field>
+              </v-card-text>
+              <v-card-actions>
+                <v-btn text large block v-if="adminToken" @click="goToUsers()">
+                  Enter
+                </v-btn>
+              </v-card-actions>
             </v-card>
           </v-row>
         </v-container>

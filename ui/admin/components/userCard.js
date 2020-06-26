@@ -2,9 +2,28 @@ const UserCard = {
     name: 'UserCard',
     template: `
     <v-card :loading="loading">
-      <v-img :src="toUrl()"       
-      class="white--text align-end"
-      height="200px">
+      <v-card-text v-if="showUserToken">
+        <v-btn
+          @click="showToken()"
+          top
+          dark
+          left
+          absolute
+        >
+          <v-icon>mdi-lastpass</v-icon>
+        </v-btn>
+        <div class="text-h6" v-html="this.userTokenStyle"> </div>
+      </v-card-text>
+      <v-img v-else :src="toUrl()"       
+        class="white--text align-end"
+        height="200px">
+        <v-btn
+          @click="showToken()"
+          top
+          absolute
+        >
+          <v-icon>mdi-lastpass</v-icon>
+        </v-btn>
         <v-btn
           v-if="canGoForward()"
           @click="goForward()"
@@ -74,12 +93,58 @@ const UserCard = {
     data() {
       return {
         loading: false,
+        userToken: '',
+        showUserToken: false,
         currentImageIndex: 0,
         addGrantDialog: null,
         addGrantModel: null,
       }
     },
+    computed: {
+      userTokenStyle: function() {
+        var outString = '';
+        var splited = this.userToken.split('.');
+
+        outString += `<span class="red--text">${splited[0]}</span>.`;
+        outString += `<span class="purple--text">${splited[1]}</span>.`;
+        outString += `<span class="blue--text">${splited[2]}</span>`;
+        return outString;
+      },
+    },
     methods: {
+      async showToken(){
+
+        if (this.showUserToken == true) {
+          this.showUserToken = false;
+          return;
+        }
+
+        if (this.userToken != ''){
+          this.showUserToken = true;
+          return;
+        }
+
+        try {
+          this.loading = true;
+          const result = await fetch(`/tokens`, {
+            method: 'POST',
+            headers: {
+              'Content-Type' : 'application/json',
+              'Authorization': `Bearer ${this.adminToken}`
+            },
+            body: JSON.stringify({
+              'user_id': this.item.id,
+            })
+          });
+
+          const theJson = await result.json()
+          this.userToken = theJson.token;
+          this.showUserToken = true;
+        }
+        finally{
+          this.loading = false;
+        }
+      },
       toUrl(){
         return `/users/${this.item.id}/${this.item.features.values[this.currentImageIndex].image_name}`
       },
