@@ -17,7 +17,6 @@ def get_image_bytes_from_base_64(base_64_string: str) -> []:
             .encode()
     )
 
-
 def __pil_image_from_bytes(img_bytes: bytes) -> Image.Image:
     return Image\
         .open(io.BytesIO(img_bytes))\

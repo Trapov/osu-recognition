@@ -79,7 +79,7 @@ async def handle(
         threshold = 0.64 - (0.03 * number_of_features)
         logger.info(f'Current threshold [{threshold}]')
 
-        if number_of_features < 11 and distance_to_closest_user <= threshold:
+        if number_of_features <= 10 and distance_to_closest_user <= threshold:
             feature_id = uuid.uuid4()
 
             await users_storage.save(

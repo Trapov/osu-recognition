@@ -1,10 +1,10 @@
 from abstractions import GrantsCrypto
 from abstractions.recognition import FaceDetector, FeatureExtractor, DistanceEstimator
-from abstractions.storages import FeaturesStorage, ImagesStorage, UsersStorage
+from abstractions.storages import FeaturesStorage, ImagesStorage, UsersStorage, RecognitionSettingsStorage
 
 from .jwt_grants_crypto import JwtGrantsCrypto
 from .recognition import DlibFaceDetector, DlibFeatureExtractor, NumpyDistanceEstimator
-from .storages import SqliteFeaturesStorage, SqliteUsersStorage, FileImagesStorage
+from .storages import SqliteFeaturesStorage, SqliteUsersStorage, FileImagesStorage, SqliteRecognitionSettingsStorage
 
 
 class ServicesContainer(object):
@@ -14,6 +14,7 @@ class ServicesContainer(object):
         self.grants_crypto: GrantsCrypto = JwtGrantsCrypto(secret_key='ada wong')
 
         self.users_storage: UsersStorage = SqliteUsersStorage('osu_recognition.db')
+        self.recognition_settings_storage : RecognitionSettingsStorage = SqliteRecognitionSettingsStorage('osu_recognition.db')
         self.features_storage: FeaturesStorage = SqliteFeaturesStorage('osu_recognition.db')
         self.images_storage: ImagesStorage = FileImagesStorage('images')
 

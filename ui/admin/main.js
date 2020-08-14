@@ -17,6 +17,21 @@ const vue = new Vue({
       adminToken: '',
       loading: false,
       currentPage: availablePages.AUTH,
+      settings: {
+        loading: false,
+        valid: true,
+        name: '',
+        is_active : '',
+        max_features : '',
+        base_threshold : '',
+        rate_of_decreasing_threshold_with_each_feature: '',
+        created_at : '',
+        updated_at: '',
+        resize_factors: {
+          x : '',
+          y: ''
+        }
+      },
       usersPage: {
         count: 8,
         offset: 0,
@@ -43,6 +58,24 @@ const vue = new Vue({
       }
     },
 
+    async getCurrentSettings(){
+      try{
+        this.loading = true;
+        this.settings.loading = true;
+        const result = await fetch(`/settings/current`, { 
+          headers: {
+            'Authorization': `Bearer ${this.adminToken}`
+          }
+        });
+        const settings = await result.json();
+        Object.assign(this.settings, settings);
+      }
+      finally{
+        this.settings.loading = false;
+        this.loading = false;
+      }
+    },
+
     canGoBack() {
       return this.usersPage.offset != 0;
     },
@@ -50,7 +83,16 @@ const vue = new Vue({
       return this.usersPage.count < (this.usersPage.total - this.usersPage.offset);
     },
 
-    goToOptions(){
+    canGoBackSettings() {
+      return this.usersPage.offset != 0;
+    },
+    canGoForwardSettings() { 
+      return this.usersPage.count < (this.usersPage.total - this.usersPage.offset);
+    },
+
+
+    async goToOptions(){
+      await this.getCurrentSettings();
       this.currentPage = availablePages.OPTIONS
     },
 

@@ -11,7 +11,16 @@ from abstractions import User
 from infrastructure.container import SINGLETON_CONTAINER
 from infrastructure.images import get_ndarray_image
 
-from use_cases import create_or_get_user, get_paged_users, to_token_grants, add_grants_for_user, remove_grants_for_user, get_single_user_from_token
+from use_cases import \
+    create_or_get_user, \
+    get_paged_users, \
+    to_token_grants, \
+    add_grants_for_user,\
+    remove_grants_for_user, \
+    get_single_user_from_token, \
+    get_paged_recognition_settings, \
+    save_or_update_recognition_settings, \
+    get_current_recognition_settings
 
 bearer = HTTPBearer()
 
@@ -32,16 +41,31 @@ class GrantsBinding(BaseModel):
     user_id: UUID
     grant: str
 
+class ResizeFactors(BaseModel):
+    x : float
+    y : float
+
+class RecognitionSettingsBinding(BaseModel):
+    name: str
+    is_active: bool
+    max_features: int
+    base_threshold: float
+    rate_of_decreasing_threshold_with_each_feature: float
+    resize_factors: ResizeFactors
+
 class TokenIssue(BaseModel):
     user_id: UUID
 
 ADMIN_TOKEN = environ.get('ADMIN_TOKEN', 'HACK')
 
+def raise_if_not_admin(credentials : str) -> None:
+    if credentials != ADMIN_TOKEN:
+        raise HTTPException(401, 'Not authorized')
+
 @app.post("/tokens", tags=['tokens'], status_code=201)
 async def users_tokens_get(*, token: HTTPBearer = Depends(bearer), token_issue: TokenIssue) -> dict:
     try:
-        if token.credentials != ADMIN_TOKEN:
-            raise HTTPException(401, 'Not authorized')
+        raise_if_not_admin(token.credentials)
 
         return {
             'token' : await to_token_grants.handle(token_issue.user_id, SINGLETON_CONTAINER.users_storage, SINGLETON_CONTAINER.grants_crypto)
@@ -52,8 +76,7 @@ async def users_tokens_get(*, token: HTTPBearer = Depends(bearer), token_issue: 
 @app.post("/grants", tags=['grants'], status_code=201)
 async def grants_post(*, token: HTTPBearer = Depends(bearer), grant: GrantsBinding) -> dict:
     try:
-        if token.credentials != ADMIN_TOKEN:
-            raise HTTPException(401, 'Not authorized')
+        raise_if_not_admin(token.credentials)
 
         await add_grants_for_user.handle(grant.user_id, grant.grant, SINGLETON_CONTAINER.users_storage)
         return Response(status_code=201)
@@ -63,8 +86,7 @@ async def grants_post(*, token: HTTPBearer = Depends(bearer), grant: GrantsBindi
 @app.delete("/grants", tags=['grants'], status_code=201)
 async def grants_delete(*, token: HTTPBearer = Depends(bearer), grant: GrantsBinding) -> dict:
     try:
-        if token.credentials != ADMIN_TOKEN:
-            raise HTTPException(401, 'Not authorized')
+        raise_if_not_admin(token.credentials)
 
         await remove_grants_for_user.handle(grant.user_id, grant.grant, SINGLETON_CONTAINER.users_storage)
         return Response(status_code=201)
@@ -96,12 +118,70 @@ async def login_post(*, file: UploadFile  = File(...)):
     except create_or_get_user.NoFeaturesExtracted:
         raise HTTPException(status_code=400, detail='Faces found, but no features extracted from the face, Try contacting the support.')
 
+@app.post("/settings", tags=['settings'], status_code=200)
+async def settings_save(*, token: HTTPBearer = Depends(bearer), settings : RecognitionSettingsBinding) -> None:
+    raise_if_not_admin(token.credentials)
+    await save_or_update_recognition_settings.handle(
+        name=settings.name, is_active=settings.is_active, max_features=settings.max_features,
+        base_threshold=settings.base_threshold, rate_of_decreasing_threshold_with_each_feature=settings.rate_of_decreasing_threshold_with_each_feature,
+        resize_factors_x=settings.resize_factors.x, resize_factors_y=settings.resize_factors.y, settings_storage=SINGLETON_CONTAINER.recognition_settings_storage
+    )
+    return Response(status_code=201)
+
+@app.get("/settings/current", tags=['settings'], status_code=200)
+async def settings_get(*, token: HTTPBearer = Depends(bearer)) -> dict:
+
+    raise_if_not_admin(token.credentials)
+
+    result = await get_current_recognition_settings.handle(settings_storage=SINGLETON_CONTAINER.recognition_settings_storage)
+    return {
+        'name': result.name,
+        "name" : result.name,
+        "is_active" : result.is_active,
+        "max_features" : result.max_features,
+        "base_threshold" : result.base_threshold,
+        "rate_of_decreasing_threshold_with_each_feature" : result.rate_of_decreasing_threshold_with_each_feature,
+        "created_at" : result.created_at,
+        "updated_at" : result.updated_at,
+        "resize_factors" : {
+            'x': result.resize_factors.x,
+            'y': result.resize_factors.y
+        }
+    }
+
+@app.get("/settings", tags=['settings'], status_code=200)
+async def settings_get(*, token: HTTPBearer = Depends(bearer), offset: int = Query(0), count: int = Query(20)) -> List[dict]:
+
+    raise_if_not_admin(token.credentials)
+
+    result = await get_paged_recognition_settings.handle(offset=offset, count=count, settings_storage=SINGLETON_CONTAINER.recognition_settings_storage)
+    return {
+        'offset': offset,
+        'count': count,
+        'total': result.total,
+        'values': [ 
+            { 
+                'name': rs.name,
+                "name" : rs.name,
+                "is_active" : rs.is_active,
+                "max_features" : rs.max_features,
+                "base_threshold" : rs.base_threshold,
+                "rate_of_decreasing_threshold_with_each_feature" : rs.rate_of_decreasing_threshold_with_each_feature,
+                "created_at" : rs.created_at,
+                "updated_at" : rs.updated_at,
+                "resize_factors" : {
+                    'x': rs.resize_factors.x,
+                    'y': rs.resize_factors.y
+                }
+            } for rs in result.values
+        ]
+    }
+
+
 @app.get("/users", tags=['users'], status_code=200)
 async def users_get(*, token: HTTPBearer = Depends(bearer), offset: int = Query(0), count: int = Query(20)) -> List[User]:
 
-    if token.credentials != ADMIN_TOKEN:
-        raise HTTPException(401, 'Not authorized')
-
+    raise_if_not_admin(token.credentials)
 
     users = await get_paged_users.handle(offset, count, SINGLETON_CONTAINER.users_storage)
     return {
@@ -131,6 +211,7 @@ async def users_get(*, token: HTTPBearer = Depends(bearer), offset: int = Query(
 @app.get("/me", tags=['user'], status_code=200)
 async def user_get_me(*, token: HTTPBearer = Depends(bearer)) -> User:
     user = await get_single_user_from_token.handle(token=token.credentials, users_storage=SINGLETON_CONTAINER.users_storage, grants_crypto=SINGLETON_CONTAINER.grants_crypto)
+    
     if not user:
         raise HTTPException(401, 'Not authorized')
     
