@@ -76,7 +76,6 @@
                     <v-text-field
                       v-model="settings.name"
                       :rules="settings.strRules"
-                      readonly
                       persistent-hint
                       label="name"
                       required
@@ -139,6 +138,7 @@
                 </v-row>
                 <v-row justify="center">
                   <v-btn
+                    @click="saveSettings(settings)"
                     dark
                     big
                     icon
@@ -156,7 +156,7 @@
           </v-row>
           <v-data-iterator
             :loading="loading"
-            :items="[1,2,3,4,5,6,7]"
+            :items="settingsPage.items"
             :hide-default-footer="true">
             <template v-slot:default="{ items }">
               <v-row>
@@ -165,15 +165,15 @@
                   sm="6"
                   md="4"
                   lg="3"
-                  v-for="item in [1,2,3,4,5,6,7]"
-                  :key="item.id"
+                  v-for="item in items"
+                  :key="item.name"
                 >
                   <v-card
                   outlined
                   >
                     <v-container>
                       <v-card-title>
-                        Name
+                        {{ item.name }}
                       </v-card-title>
                       <v-row>
                         <v-col
@@ -181,7 +181,7 @@
                           md="4"
                         >
                           <v-card-text>
-                            Max features
+                            {{ item.max_features }}
                           </v-card-text>
                         </v-col>
                         <v-col
@@ -189,7 +189,7 @@
                           md="4"
                         >
                           <v-card-text>
-                            Base threshold
+                            {{item.base_threshold}}
                           </v-card-text>
                         </v-col>
                         <v-col
@@ -197,7 +197,7 @@
                           md="4"
                         >
                           <v-card-text>
-                            Decreasing rate of threashold with each feature
+                            {{item.rate_of_decreasing_threshold_with_each_feature}}
                           </v-card-text>
                         </v-col>
                         <v-col
@@ -205,7 +205,7 @@
                           md="4"
                         >
                           <v-card-text>
-                            X resize factor
+                            {{item.resize_factors.x}}
                           </v-card-text>
                         </v-col>
                         <v-col
@@ -213,7 +213,7 @@
                           md="4"
                         >
                           <v-card-text>
-                            Y resize factor
+                            {{item.resize_factors.y}}
                           </v-card-text>     
                         </v-col>
                       </v-row>

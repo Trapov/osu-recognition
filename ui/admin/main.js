@@ -17,6 +17,12 @@ const vue = new Vue({
       adminToken: '',
       loading: false,
       currentPage: availablePages.AUTH,
+      settingsPage : {
+        count: 8,
+        offset: 0,
+        total: 0,
+        items: []
+      },
       settings: {
         loading: false,
         valid: true,
@@ -76,6 +82,48 @@ const vue = new Vue({
       }
     },
 
+    async saveSettings(settings){
+      try{
+        this.loading = true;
+        this.settings.loading = true;
+        const result = await fetch(`/settings`, { 
+          method: 'POST',
+          headers: {
+            'Content-Type' : 'application/json',
+            'Authorization': `Bearer ${this.adminToken}`
+          },
+          body: JSON.stringify(settings)
+        });
+        if(result.status != 201){
+          console.error(result);
+        }
+      }
+      finally{
+        this.settings.loading = false;
+        this.loading = false;
+      }
+    },
+
+    async getSettings(){
+      try{
+        this.loading = true;
+        this.settings.loading = true;
+        const result = await fetch(`/settings?offset=${this.settingsPage.offset}&count=${this.settingsPage.count}`, { 
+          headers: {
+            'Authorization': `Bearer ${this.adminToken}`
+          }
+        });
+        const settings = await result.json();
+        settings.values = settings.values.filter(v => v.is_active == false);
+        this.settingsPage.total = settings.total;
+        this.settingsPage.items = settings.values;
+      }
+      finally{
+        this.settings.loading = false;
+        this.loading = false;
+      }
+    },
+
     canGoBack() {
       return this.usersPage.offset != 0;
     },
@@ -84,21 +132,76 @@ const vue = new Vue({
     },
 
     canGoBackSettings() {
-      return this.usersPage.offset != 0;
+      return this.settingsPage.offset != 0;
     },
     canGoForwardSettings() { 
-      return this.usersPage.count < (this.usersPage.total - this.usersPage.offset);
+      return this.settingsPage.count < (this.settingsPage.total - this.settingsPage.offset);
     },
 
 
     async goToOptions(){
       await this.getCurrentSettings();
+      await this.getSettings();
       this.currentPage = availablePages.OPTIONS
     },
 
     async goToUsers(){
       await this.refreshPage();
       this.currentPage = availablePages.USERS
+    },
+
+    async goForwardSettings(){
+      try{
+        if(!this.canGoForwardSettings()){
+          return;
+        }
+        const newOffset = this.settingsPage.offset + this.settingsPage.count;
+        this.loading = true;
+        const result = await fetch(`/settings?offset=${newOffset}&count=${this.settingsPage.count}`, { 
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${this.adminToken}`
+          }
+        });
+        const page = await result.json();
+        this.settingsPage.offset = newOffset;
+        this.settingsPage.total = page.total;
+        this.settingsPage.items = page.values;
+      }
+      catch(exception){
+        console.error(exception)
+      }
+      finally{
+        this.loading = false;
+      }
+    },
+
+    async goBackSettings(){
+      try{
+        if(!this.canGoBackSettings()){
+          return;
+        }
+        const newOffset = this.settingsPage.offset - this.settingsPage.count;
+
+        this.loading = true;
+        const result = await fetch(`/settings?offset=${newOffset}&count=${this.settingsPage.count}`, { 
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${this.adminToken}`
+          }
+        });
+        const page = await result.json();
+
+        this.settingsPage.offset = newOffset;
+        this.settingsPage.total = page.total;
+        this.settingsPage.items = page.values;
+      }
+      catch(exception){
+        console.error(exception)
+      }
+      finally{
+        this.loading = false;
+      }
     },
 
     async goForward(){

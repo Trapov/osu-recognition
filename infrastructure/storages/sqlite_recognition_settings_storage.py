@@ -19,6 +19,13 @@ class SqliteRecognitionSettingsStorage(RecognitionSettingsStorage):
             self.__pooled_connection = await aiosqlite.connect(self.__sqlite_file)
             self.__pooled_connection.row_factory = aiosqlite.Row
 
+        # todo, make constraints
+        await self.__pooled_connection.execute('''
+            update "RecognitionSetting"
+            set "is_active" = 0
+            where "is_active" = 1
+        ''')
+
         await self.__pooled_connection.execute('''
             insert or replace into "RecognitionSetting" (
                 "name",
@@ -43,6 +50,7 @@ class SqliteRecognitionSettingsStorage(RecognitionSettingsStorage):
                 settings.resize_factors.y
             ]
         )
+
         await self.__pooled_connection.commit()
 
     async def get_current(self) -> RecognitionSettings:
