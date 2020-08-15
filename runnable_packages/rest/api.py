@@ -105,6 +105,7 @@ async def login_post(*, file: UploadFile  = File(...)):
             SINGLETON_CONTAINER.features_storage,
             SINGLETON_CONTAINER.distance_estimator,
             SINGLETON_CONTAINER.users_storage,
+            SINGLETON_CONTAINER.recognition_settings_storage,
             SINGLETON_CONTAINER.images_storage)
 
         token = await to_token_grants.handle(user_id, SINGLETON_CONTAINER.users_storage, SINGLETON_CONTAINER.grants_crypto)
@@ -118,7 +119,7 @@ async def login_post(*, file: UploadFile  = File(...)):
     except create_or_get_user.NoFeaturesExtracted:
         raise HTTPException(status_code=400, detail='Faces found, but no features extracted from the face, Try contacting the support.')
 
-@app.post("/settings", tags=['settings'], status_code=200)
+@app.post("/settings", tags=['settings'], status_code=201)
 async def settings_save(*, token: HTTPBearer = Depends(bearer), settings : RecognitionSettingsBinding) -> None:
     raise_if_not_admin(token.credentials)
     await save_or_update_recognition_settings.handle(

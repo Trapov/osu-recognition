@@ -36,5 +36,9 @@ new Vue({
         await this.loadMe(newValue);
       }
     },
-    vuetify: new Vuetify(),
+    vuetify: new Vuetify({
+      theme: {
+        dark : true
+      }
+    }),
 })

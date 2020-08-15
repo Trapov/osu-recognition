@@ -4,8 +4,8 @@ from infrastructure.images import get_ndarray_image, resize_ndarray
 from statistics import mean
 
 from abstractions.recognition import FaceDetector, FeatureExtractor, DistanceEstimator
-from abstractions.storages import FeaturesStorage, ImagesStorage, UsersStorage
-from abstractions import User, UserFeatures, Feature
+from abstractions.storages import FeaturesStorage, ImagesStorage, UsersStorage, RecognitionSettingsStorage
+from abstractions import User, UserFeatures, Feature, RecognitionSettings, ResizeFactors
 
 import uuid, logging
 import datetime
@@ -34,9 +34,13 @@ async def handle(
         features_storage: FeaturesStorage,
         distance_estimator: DistanceEstimator,
         users_storage: UsersStorage,
+        settings_storage: RecognitionSettingsStorage,
         images_storage: ImagesStorage) -> uuid.UUID:
     logger = logging.getLogger('use_case__create_or_get_user')
-    ndarray_resized = resize_ndarray(get_ndarray_image(input_image.bytes), (0.3, 0.3))
+
+    settings : RecognitionSettings = await settings_storage.get_current()
+
+    ndarray_resized = resize_ndarray(get_ndarray_image(input_image.bytes), (settings.resize_factors.x, settings.resize_factors.y))
 
     logger.debug('Detecting faces.')
 
@@ -76,10 +80,10 @@ async def handle(
 
     if closest_user_id:
         logger.info(f'Distance to user[{closest_user_id}] = [{distance_to_closest_user}]')
-        threshold = 0.64 - (0.03 * number_of_features)
+        threshold = settings.base_threshold - (settings.rate_of_decreasing_threshold_with_each_feature * number_of_features)
         logger.info(f'Current threshold [{threshold}]')
 
-        if number_of_features <= 10 and distance_to_closest_user <= threshold:
+        if number_of_features <= settings.max_features and distance_to_closest_user <= threshold:
             feature_id = uuid.uuid4()
 
             await users_storage.save(

@@ -8,7 +8,11 @@ const availablePages = {
 
 const vue = new Vue({
   el: '#app',
-  vuetify: new Vuetify(),
+  vuetify: new Vuetify({
+    theme: {
+      dark : true
+    }
+  }),
   components: {
       UserCard
   },
@@ -95,8 +99,9 @@ const vue = new Vue({
           body: JSON.stringify(settings)
         });
         if(result.status != 201){
-          console.error(result);
+          console.error('Could not save the settings', result);
         }
+        await this.goToOptions();
       }
       finally{
         this.settings.loading = false;
@@ -174,6 +179,11 @@ const vue = new Vue({
       finally{
         this.loading = false;
       }
+    },
+
+    async pickNewSettings(settings) {
+      settings.is_active = true;
+      await this.saveSettings(settings);
     },
 
     async goBackSettings(){

@@ -10,6 +10,21 @@
 <body>
   <div id="app">
     <v-app>
+      <v-system-bar>
+        <v-container fluid>
+          <v-row>
+            <v-col cols="8" lg="11" sm="10">
+            </v-col>
+            <v-col cols="4" lg="1" sm="2">
+              <v-switch
+                v-model="$vuetify.theme.dark"
+                :prepend-icon="$vuetify.theme.dark ? 'mdi-lightbulb' : 'mdi-lightbulb-outline'"
+              >
+              </v-switch>
+            </v-col>
+          </v-row>
+        </v-container>
+      </v-system-bar>
       <v-content >
         <v-container class="fill-height">
 

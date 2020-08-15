@@ -40,7 +40,7 @@ const UserCard = {
         <v-list>
 
   
-          <v-toolbar  v-else flat>
+          <v-toolbar flat>
   
             <v-toolbar-title>
               <span >

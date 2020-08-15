@@ -11,7 +11,8 @@ export default {
       </v-row>
       <v-row v-if="deviceId" align="center" justify="space-around">
         <v-card :loading="loading" @click="signIn(null)">
-          <video
+          <v-img :style="imageToShow == null ? 'display: none;' : ''" :src="imageToShow" />
+          <video :style="imageToShow == null ? '' : 'display: none;'"
             ref="video"
             :width="width"
             :height="height"
@@ -58,6 +59,7 @@ export default {
   },
   data() {
     return {
+      imageToShow: null,
       loading: false,
       deviceId: null,
       source: null,
@@ -201,8 +203,9 @@ export default {
       }
     },
     signIn(event) {
-      
-      this.getCanvas().toBlob((blob) => this.obtainToken(blob), 'image/png', 1);
+      const canvas = this.getCanvas();
+      this.imageToShow = canvas.toDataURL();
+      canvas.toBlob((blob) => this.obtainToken(blob), 'image/png', 1);
     },
 
     async obtainToken(blob) {
@@ -214,7 +217,6 @@ export default {
           method: 'POST',
           body: formData
         });
-  
         this.$emit('token-obtained', await result.json());
       } finally{
         this.loading = false;

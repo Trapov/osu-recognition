@@ -10,6 +10,21 @@
 <body>
   <div id="app">
     <v-app>
+      <v-system-bar>
+        <v-container fluid>
+          <v-row>
+            <v-col cols="8" lg="11" sm="10">
+            </v-col>
+            <v-col cols="4" lg="1" sm="2">
+              <v-switch
+                v-model="$vuetify.theme.dark"
+                :prepend-icon="$vuetify.theme.dark ? 'mdi-lightbulb' : 'mdi-lightbulb-outline'"
+              >
+              </v-switch>
+            </v-col>
+          </v-row>
+        </v-container>
+      </v-system-bar>
       <v-main>
         <v-container fluid v-if="currentPage=='users'">
           <v-row align="center" justify="center">
@@ -118,7 +133,7 @@
                     <v-text-field
                       v-model="settings.resize_factors.x"
                       :rules="settings.floatRules"
-                      prepend-icon="mdi-arrow-down-bold-hexagon-outline"
+                      prepend-icon="mdi-crop"
                       label="X resize factor"
                       prepend-icon="mdi-crop"
                       persistent-hint
@@ -141,7 +156,7 @@
                     @click="saveSettings(settings)"
                     dark
                     big
-                    icon
+                    text
                     color="green">
                     Save
                   </v-btn>
@@ -151,75 +166,49 @@
           </v-row>
           <v-row justify="center">
             <v-banner>
-              <h2> The other options </h2>
+              <h2> History </h2>
             </v-banner>
           </v-row>
           <v-data-iterator
             :loading="loading"
             :items="settingsPage.items"
             :hide-default-footer="true">
+
+              <template v-slot:no-data>
+                <h2> No history . . . </h2>
+              </template>
+
             <template v-slot:default="{ items }">
+              <v-container>
               <v-row>
                 <v-col
-                  cols="12"
-                  sm="6"
-                  md="4"
-                  lg="3"
                   v-for="item in items"
                   :key="item.name"
                 >
                   <v-card
-                  outlined
-                  >
-                    <v-container>
-                      <v-card-title>
-                        {{ item.name }}
-                      </v-card-title>
-                      <v-row>
-                        <v-col
-                          cols="6"
-                          md="4"
-                        >
-                          <v-card-text>
-                            {{ item.max_features }}
-                          </v-card-text>
-                        </v-col>
-                        <v-col
-                          cols="6"
-                          md="4"
-                        >
-                          <v-card-text>
-                            {{item.base_threshold}}
-                          </v-card-text>
-                        </v-col>
-                        <v-col
-                          cols="6"
-                          md="4"
-                        >
-                          <v-card-text>
-                            {{item.rate_of_decreasing_threshold_with_each_feature}}
-                          </v-card-text>
-                        </v-col>
-                        <v-col
-                          cols="6"
-                          md="4"
-                        >
-                          <v-card-text>
-                            {{item.resize_factors.x}}
-                          </v-card-text>
-                        </v-col>
-                        <v-col
-                          cols="6"
-                          md="4"
-                        >
-                          <v-card-text>
-                            {{item.resize_factors.y}}
-                          </v-card-text>     
-                        </v-col>
-                      </v-row>
-                    </v-container>          
+                  @click="pickNewSettings(item)">
+                    <v-card-title>
+                      {{ item.name }}
+                    </v-card-title>
+                    <v-card-text>
+                      <v-icon>mdi-face</v-icon> {{ item.max_features }}
+                    </v-card-text>
+                    <v-card-text>
+                      <v-icon> mdi-block-helper </v-icon> Base threshold {{item.base_threshold}}
+                    </v-card-text>
+                    <v-card-text>
+                      <v-icon> mdi-arrow-down-bold-hexagon-outline </v-icon>Decreasing rate {{item.rate_of_decreasing_threshold_with_each_feature}}
+                    </v-card-text>
+                    <v-card-text>
+                      <v-icon> mdi-crop </v-icon> Resize factor x{{item.resize_factors.x}}
+                    </v-card-text>
+
+                    <v-card-text>
+                      <v-icon> mdi-crop </v-icon> Resize factor y{{item.resize_factors.y}}
+                    </v-card-text>     
                   </v-card>
               </v-row>
+              </v-container>
             </template>
           </v-data-iterator>
 
