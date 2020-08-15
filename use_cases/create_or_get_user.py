@@ -10,12 +10,26 @@ from abstractions import User, UserFeatures, Feature, RecognitionSettings, Resiz
 import uuid, logging
 import datetime
 
+from aiocache import Cache
+cache = Cache(Cache.MEMORY)
 
 class InputImage:
     def __init__(self, image_bytes: bytes, image_type: str = "jpg"):
         self.bytes = image_bytes
         self.type = image_type
 
+
+async def get_settings_cached(settings_storage : RecognitionSettingsStorage) -> RecognitionSettings:
+    settings = await cache.get('current')
+    
+    if settings:
+        return settings
+
+    settings = await settings_storage.get_current()
+    await cache.set('current', settings, ttl=60)
+
+    return settings
+    
 
 class NoFacesFound(Exception):
     def __init__(self, *args, **kwargs):
@@ -38,7 +52,7 @@ async def handle(
         images_storage: ImagesStorage) -> uuid.UUID:
     logger = logging.getLogger('use_case__create_or_get_user')
 
-    settings : RecognitionSettings = await settings_storage.get_current()
+    settings : RecognitionSettings = await get_settings_cached(settings_storage)
 
     ndarray_resized = resize_ndarray(get_ndarray_image(input_image.bytes), (settings.resize_factors.x, settings.resize_factors.y))
 
