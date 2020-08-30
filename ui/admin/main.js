@@ -1,8 +1,10 @@
 import UserCard from "./components/userCard.js";
+import VueJsonPretty from "./components/vue-pretty-print/index.js";
 
 const availablePages = {
   USERS: 'users',
   AUTH: 'auth',
+  LOGS: 'logs',
   OPTIONS: 'options'
 }
 
@@ -14,10 +16,12 @@ const vue = new Vue({
     }
   }),
   components: {
-      UserCard
+      UserCard,
+      VueJsonPretty
   },
   data() {
     return {
+      logs: [],
       adminToken: '',
       loading: false,
       currentPage: availablePages.AUTH,
@@ -129,6 +133,23 @@ const vue = new Vue({
       }
     },
 
+    
+    async getLastLogs(){
+      try{
+        this.loading = true;
+        const result = await fetch(`/logs`, { 
+          headers: {
+            'Authorization': `Bearer ${this.adminToken}`
+          }
+        });
+        this.logs = await result.json();
+
+      }
+      finally{
+        this.loading = false;
+      }
+    },
+
     canGoBack() {
       return this.usersPage.offset != 0;
     },
@@ -148,6 +169,11 @@ const vue = new Vue({
       await this.getCurrentSettings();
       await this.getSettings();
       this.currentPage = availablePages.OPTIONS
+    },
+
+    async goToLogs(){
+      await this.getLastLogs();
+      this.currentPage = availablePages.LOGS
     },
 
     async goToUsers(){

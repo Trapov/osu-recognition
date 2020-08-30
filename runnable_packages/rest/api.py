@@ -25,13 +25,14 @@ from use_cases import \
 bearer = HTTPBearer()
 
 app = FastAPI(title='REST-API. Recognition-Auth', version="1.0.0")
+
 app.mount('/users', StaticFiles(directory="./images", check_dir=False), 'person_faces')
 
 app.mount('/client', StaticFiles(directory='./ui/client', check_dir=True, html=True), 'ui_client')
 app.mount('/admin', StaticFiles(directory='./ui/admin', check_dir=True, html=True), 'ui_admin')
 
-from .logging_configuration import LOGGING
-logging.config.dictConfig(LOGGING)
+from .logging_configuration import LOGGING, configure
+get_top_logs = configure(LOGGING)
 
 import mimetypes
 mimetypes.add_type('text/css', '.css')
@@ -61,6 +62,12 @@ ADMIN_TOKEN = environ.get('ADMIN_TOKEN', 'HACK')
 def raise_if_not_admin(credentials : str) -> None:
     if credentials != ADMIN_TOKEN:
         raise HTTPException(401, 'Not authorized')
+
+@app.get("/logs", tags=['logs'], status_code=200)
+async def logs_get(*, token: HTTPBearer = Depends(bearer)) -> dict:
+    raise_if_not_admin(token.credentials)
+    return get_top_logs()
+    
 
 @app.post("/tokens", tags=['tokens'], status_code=201)
 async def users_tokens_get(*, token: HTTPBearer = Depends(bearer), token_issue: TokenIssue) -> dict:
@@ -232,3 +239,5 @@ async def user_get_me(*, token: HTTPBearer = Depends(bearer)) -> User:
         'grants': user.grants,
         'created_at': user.created_at
     }
+
+app.mount('/', StaticFiles(directory='./ui', check_dir=True, html=True), 'ui_entry')
