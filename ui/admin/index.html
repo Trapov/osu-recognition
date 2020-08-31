@@ -240,21 +240,27 @@
 
         <v-container fluid fill-height v-if="currentPage=='logs'">
           <v-row justify="center">
-            <v-banner>
-              <h2> Logs </h2>
+            <v-banner single-line>
+              <div class="text-h4">
+                Logs
+              </div>
             </v-banner>
           </v-row>
+          <v-row>
             <vue-json-pretty
               :highlight-mouseover-node="true"
               :show-length="true"
               :data="logs">
             </vue-json-pretty>
+          </v-row>
         </v-container>
 
         <v-container fluid fill-height v-if="currentPage=='options'">
           <v-row justify="center">
             <v-banner>
-              <h2> Current options </h2>
+              <div class="text-h4">
+                Current options
+              </div>
             </v-banner>
           </v-row>
           <v-row justify="center">
@@ -342,7 +348,9 @@
           </v-row>
           <v-row justify="center">
             <v-banner>
-              <h2> History </h2>
+              <div class="text-h4">
+                History
+              </div>
             </v-banner>
           </v-row>
           <v-data-iterator
@@ -351,7 +359,9 @@
             :hide-default-footer="true">
 
               <template v-slot:no-data>
-                <h2> No history . . . </h2>
+                <div class="text-h4">
+                  No history . . .
+                </div>
               </template>
 
             <template v-slot:default="{ items }">
@@ -411,12 +421,16 @@
                 Sign-in
               </v-card-title>
               <v-card-text>
-                <v-text-field clearable solo-inverted
-                v-model="adminToken"
+                <v-text-field 
+                  :type="showPassword ? 'text' : 'password'" 
+                  @click:append="showPassword = !showPassword"
+                  :append-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'" 
+                  solo-inverted
+                  v-model="adminToken"
               ></v-text-field>
               </v-card-text>
               <v-card-actions>
-                <v-btn text large block v-if="adminToken" @click="goToUsers()">
+                <v-btn text large block v-if="adminToken" @click="setAdminToken(adminToken);goToUsers()">
                   Enter
                 </v-btn>
               </v-card-actions>

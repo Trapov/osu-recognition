@@ -10,5 +10,9 @@ class FeaturesStorage(ABC):
         ...
 
     @abstractmethod
+    async def enumerate_for(self, idx : uuid.UUID) -> AsyncIterator[UserFeatures]:
+        ...
+
+    @abstractmethod
     async def enumerate(self) -> AsyncIterator[UserFeatures]:
         ...

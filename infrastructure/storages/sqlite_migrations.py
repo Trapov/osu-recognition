@@ -36,6 +36,23 @@ migration_scripts = [
     );
 ''',
 '''
+    create table if not exists "Distance" (
+        "feature_id_from" text not null,
+        "feature_id_to" text not null,
+        "user_id_from" text not null,
+        "user_id_to" text not null,
+        "created_at" text not null,
+        "updated_at" text nll,
+        foreign key ("feature_id_from") REFERENCES "Feature" ("feature_id"),
+        foreign key ("feature_id_to") REFERENCES "Feature" ("feature_id"),
+        foreign key ("user_id_from") REFERENCES "User" ("user_id"),
+        foreign key ("user_id_to") REFERENCES "User" ("user_id")
+        on delete cascade
+        on update no action
+    );
+'''
+,
+'''
     create table if not exists "RecognitionSetting" (
         "name" text primary key,
         "is_active" integer not null,

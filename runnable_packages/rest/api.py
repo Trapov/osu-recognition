@@ -1,4 +1,4 @@
-from fastapi import FastAPI, File, UploadFile, Query, HTTPException, Depends
+from fastapi import FastAPI, File, UploadFile, Query, Path, HTTPException, Depends
 from fastapi.security import HTTPBearer
 from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
@@ -20,13 +20,13 @@ from use_cases import \
     get_single_user_from_token, \
     get_paged_recognition_settings, \
     save_or_update_recognition_settings, \
-    get_current_recognition_settings
+    get_current_recognition_settings, \
+    create_or_get_distances_for
 
 bearer = HTTPBearer()
 
 app = FastAPI(title='REST-API. Recognition-Auth', version="1.0.0")
 
-app.mount('/users', StaticFiles(directory="./images", check_dir=False), 'person_faces')
 
 app.mount('/client', StaticFiles(directory='./ui/client', check_dir=True, html=True), 'ui_client')
 app.mount('/admin', StaticFiles(directory='./ui/admin', check_dir=True, html=True), 'ui_admin')
@@ -99,6 +99,24 @@ async def grants_delete(*, token: HTTPBearer = Depends(bearer), grant: GrantsBin
         return Response(status_code=201)
     except add_grants_for_user.UserNotFound:
         raise HTTPException(status_code=404, detail='No user found. Create user first.')
+
+@app.get("/users/{idx}/nearest", tags=['users'], status_code=200)
+async def get_nearest(*, idx : uuid.UUID, token: HTTPBearer = Depends(bearer)):
+    raise_if_not_admin(token.credentials)
+    result = await create_or_get_distances_for.handle(
+            idx,
+            SINGLETON_CONTAINER.features_storage,
+            SINGLETON_CONTAINER.distance_estimator,
+            SINGLETON_CONTAINER.users_storage
+        )
+    
+    return [ 
+        {
+        'user_id': str(i[0]),
+        'distances': list(i.tolist() for i in i[1])
+        }
+        for i in result
+    ]
 
 @app.post("/users", tags=['users'], status_code=201)
 async def login_post(*, file: UploadFile  = File(...)):
@@ -240,4 +258,5 @@ async def user_get_me(*, token: HTTPBearer = Depends(bearer)) -> User:
         'created_at': user.created_at
     }
 
+app.mount('/users', StaticFiles(directory="./images", check_dir=False), 'person_faces')
 app.mount('/', StaticFiles(directory='./ui', check_dir=True, html=True), 'ui_entry')

@@ -26,6 +26,41 @@ class SqliteFeaturesStorage(FeaturesStorage):
                  parameters=[str(user_id), str(feature_id), image_type, feature, str(created_at)])
             await self.__pooled_connection.commit()
 
+    async def enumerate_for(self, idx : uuid.UUID) -> AsyncIterator[UserFeatures]:
+        if not self.__pooled_connection:
+            self.__pooled_connection = await aiosqlite.connect(self.__sqlite_file)
+            self.__pooled_connection.row_factory = aiosqlite.Row
+
+        async with self.__pooled_connection.execute('''
+                select 
+                    "user_id",
+                    "feature_id",
+                    "image_type",
+                    "feature",
+                    "created_at"
+                from "Feature"
+                where "user_id" = ?
+            ''', [str(idx)]) as cursor:
+            current_user_features: UserFeatures = None
+            async for row in cursor:
+
+                row_user_id = uuid.UUID(row[0])
+                row_feature_id = uuid.UUID(row[1])
+
+                if not current_user_features:
+                    current_user_features = UserFeatures(row_user_id, [])
+                elif current_user_features.user_id != row_user_id:
+                    yield current_user_features
+                    current_user_features = UserFeatures(row_user_id, [])
+
+                current_user_features.features.append(
+                    Feature(idx=row_feature_id, image_type=row[2], feature=row[3], created_at=datetime.fromisoformat(row[4])))
+                
+            if current_user_features:
+                yield current_user_features
+            else:
+                return
+
     async def enumerate(self) -> AsyncIterator[UserFeatures]:
         if not self.__pooled_connection:
             self.__pooled_connection = await aiosqlite.connect(self.__sqlite_file)

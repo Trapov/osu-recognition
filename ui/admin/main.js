@@ -7,7 +7,44 @@ const availablePages = {
   LOGS: 'logs',
   OPTIONS: 'options'
 }
+        
+Date.prototype.addHours = function(h) {
+  this.setTime(this.getTime() + (h*60*60*1000));
+  return this;
+}
 
+function getCookie(name) {
+  let matches = document.cookie.match(new RegExp(
+    "(?:^|; )" + name.replace(/([\.$?*|{}\(\)\[\]\\\/\+^])/g, '\\$1') + "=([^;]*)"
+  ));
+  return matches ? decodeURIComponent(matches[1]) : undefined;
+}
+
+function setCookie(name, value, options = {}) {
+
+  options = {
+    path: '/admin',
+    ...options
+  };
+
+  if (options.expires instanceof Date) {
+    options.expires = options.expires.toUTCString();
+  }
+
+  let updatedCookie = encodeURIComponent(name) + "=" + encodeURIComponent(value);
+
+  for (let optionKey in options) {
+    updatedCookie += "; " + optionKey;
+    let optionValue = options[optionKey];
+    if (optionValue !== true) {
+      updatedCookie += "=" + optionValue;
+    }
+  }
+
+  document.cookie = updatedCookie;
+  console.log(document.cookie);
+  console.log(updatedCookie);
+}
 const vue = new Vue({
   el: '#app',
   vuetify: new Vuetify({
@@ -22,7 +59,8 @@ const vue = new Vue({
   data() {
     return {
       logs: [],
-      adminToken: '',
+      showPassword: false,
+      providedAdminToken: '',
       loading: false,
       currentPage: availablePages.AUTH,
       settingsPage : {
@@ -54,7 +92,21 @@ const vue = new Vue({
       },
     }
   },
+  computed: {
+    adminToken : {
+      get: function() {
+        return this.providedAdminToken || (this.providedAdminToken = getCookie('adminToken'));
+      },
+      set: function(newValue) {
+        this.providedAdminToken = newValue;
+      }
+    }
+  },
   methods: {
+    setAdminToken (newValue) {
+      setCookie('adminToken', newValue, {expires: new Date().addHours(2) });
+      console.log("cookie was set")
+    },
     async refreshPage(){
       try{
         this.loading = true;

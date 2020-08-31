@@ -53,7 +53,7 @@ def configure(logging_dict_config : dict = __default_logging_configure(), maxlen
 
     logging.config.dictConfig(logging_dict_config)
 
-    return lambda : list(dequeue)
+    return lambda : sorted(list(dequeue), reverse=True, key=lambda x : x.asctime)
 
 LOGGING = {
     'version': 1,
