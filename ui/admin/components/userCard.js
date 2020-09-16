@@ -5,24 +5,33 @@ const UserCard = {
       <v-dialog
         v-model="nearestDialog"
       >
+      <v-card flat>
+      <v-card-actions style="margin:0px 40px 0px 40px;">
+        <v-text-field clearable counter prepend-icon="search">
+        </v-text-field>
+      </v-card-actions>
       <v-card-text>
-        <v-list avatar>
-          <v-list-group v-for="(users, user_id) in nearest" :key="user_id">
+        <v-list>
+          <v-list-group prepend-icon="" sub-group v-for="(users, user_id) in nearest" :key="user_id">
             <template v-slot:activator>
-                To user [{{user_id}}]
+              <span style="color:rgb(153,153,0)"> [{{user_id}}] </span>
             </template>
 
-            <v-list-group sub-group v-for="(user_features, feature_id_from) in users" :key="feature_id_from">
+            <v-list-group prepend-icon="" sub-group v-for="(user_features, feature_id_from) in users" :key="feature_id_from">
               <template v-slot:activator>
-                <v-list-item-avatar size="100">
+                <v-list-item-title>
+                  {{ Object.getOwnPropertyNames(user_features).length }} features looks like
+                </v-list-item-title>
+                <v-list-item-avatar size="60">
                   <v-img
                     :src="toFeatureUrl(item.id, feature_id_from)"
                   >
                 </v-list-item-avatar>
+                
               </template>
 
               <v-list-item v-for="(distance, feature_id_to) in user_features" :key="feature_id_to">
-                <v-list-item-avatar size="90">
+                <v-list-item-avatar size="55">
                   <v-img
                     :src="toFeatureUrl(user_id, feature_id_to)"
                   >
@@ -35,6 +44,7 @@ const UserCard = {
 
         </v-list>
       </v-card-text>
+      </v-card>
       </v-dialog>
 
       <div>
