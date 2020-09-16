@@ -107,6 +107,7 @@ const vue = new Vue({
       setCookie('adminToken', newValue, {expires: new Date().addHours(2) });
       console.log("cookie was set")
     },
+
     async refreshPage(){
       try{
         this.loading = true;

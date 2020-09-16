@@ -2,6 +2,42 @@ const UserCard = {
     name: 'UserCard',
     template: `
     <v-card :loading="loading">
+      <v-dialog
+        v-model="nearestDialog"
+      >
+      <v-card-text>
+        <v-list avatar>
+          <v-list-group v-for="(users, user_id) in nearest" :key="user_id">
+            <template v-slot:activator>
+                To user [{{user_id}}]
+            </template>
+
+            <v-list-group sub-group v-for="(user_features, feature_id_from) in users" :key="feature_id_from">
+              <template v-slot:activator>
+                <v-list-item-avatar size="100">
+                  <v-img
+                    :src="toFeatureUrl(item.id, feature_id_from)"
+                  >
+                </v-list-item-avatar>
+              </template>
+
+              <v-list-item v-for="(distance, feature_id_to) in user_features" :key="feature_id_to">
+                <v-list-item-avatar size="90">
+                  <v-img
+                    :src="toFeatureUrl(user_id, feature_id_to)"
+                  >
+                </v-list-item-avatar> 
+                {{distance}}
+              </v-list-item>
+            </v-list-group>
+
+          </v-list-group>
+
+        </v-list>
+      </v-card-text>
+      </v-dialog>
+
+      <div>
       <v-card-text v-if="showUserToken">
         <v-btn
           @click="showToken()"
@@ -23,6 +59,15 @@ const UserCard = {
           absolute
         >
           <v-icon>mdi-lastpass</v-icon>
+        </v-btn>
+          <v-btn
+          @click="showNearest()"
+          top
+          right
+          small
+          absolute
+        >
+          Nearest
         </v-btn>
         <v-btn
           v-if="canGoForward()"
@@ -50,6 +95,7 @@ const UserCard = {
           {{item.id}}
         </v-card-title>
       </v-img>
+      </div>
       <v-card-text>
         <v-text-field readonly append-icon="date_range" v-model="item.created_at">
         </v-text-field>
@@ -94,10 +140,13 @@ const UserCard = {
       return {
         loading: false,
         userToken: '',
+        nearest: null,
         showUserToken: false,
+        showUserNearest: false,
         currentImageIndex: 0,
         addGrantDialog: null,
         addGrantModel: null,
+        nearestDialog: false
       }
     },
     computed: {
@@ -112,6 +161,33 @@ const UserCard = {
       },
     },
     methods: {
+      async getNearest() {
+        try {
+          this.loading = true;
+          const result = await fetch(`/users/${this.item.id}/nearest`, {
+            method: 'GET',
+            headers: {
+              'Content-Type' : 'application/json',
+              'Authorization': `Bearer ${this.adminToken}`
+            }
+          });
+
+          const theJson = await result.json()
+          this.nearest = theJson;
+        }
+        finally{
+          this.loading = false;
+        }
+      },
+      async showNearest() {
+
+        if (this.nearest == null) {
+          await this.getNearest();
+        }
+
+        this.showUserNearest = !this.showUserNearest;
+        this.nearestDialog = !this.nearestDialog;
+      },
       async showToken(){
 
         if (this.showUserToken == true) {
@@ -145,7 +221,10 @@ const UserCard = {
           this.loading = false;
         }
       },
-      toUrl(){
+      toFeatureUrl(user_id, image_name) {
+        return `/users/${user_id}/${image_name}`
+      },
+      toUrl() {
         return `/users/${this.item.id}/${this.item.features.values[this.currentImageIndex].image_name}`
       },
       canGoBack() {

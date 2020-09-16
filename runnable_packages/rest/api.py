@@ -110,13 +110,7 @@ async def get_nearest(*, idx : uuid.UUID, token: HTTPBearer = Depends(bearer)):
             SINGLETON_CONTAINER.users_storage
         )
     
-    return [ 
-        {
-        'user_id': str(i[0]),
-        'distances': list(i.tolist() for i in i[1])
-        }
-        for i in result
-    ]
+    return result
 
 @app.post("/users", tags=['users'], status_code=201)
 async def login_post(*, file: UploadFile  = File(...)):
