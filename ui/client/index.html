@@ -1,12 +1,32 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/@mdi/font@4.x/css/materialdesignicons.min.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css?family=Material+Icons" rel="stylesheet">
+  <link href="../libs/fonts.css" rel="stylesheet">
+  <link href="../libs/materialdesignicons.min.css" rel="stylesheet">
+  <link href="../libs/material-icons.css" rel="stylesheet">
+  <link href="../libs/vuetify.min.css" rel="stylesheet">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
+<style>
+::-webkit-scrollbar {
+  width: 0.4em;
+  height: 0.4em;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: darkorchid;
+}
+ 
+::-webkit-scrollbar-thumb {
+  background-color: darkgrey;
+  border-radius: 8%;
+}
+
+::-webkit-scrollbar-track {
+  background-color: darkgrey;
+}
+</style>
 </head>
+
 <body>
   <div id="app">
     <v-app>
@@ -25,7 +45,7 @@
           </v-row>
         </v-container>
       </v-system-bar>
-      <v-content >
+      <v-main >
         <v-container class="fill-height">
 
           <user-card :user="user" v-if="user" >
@@ -34,12 +54,12 @@
           </web-cam>
 
         </v-container>
-      </v-content>
+      </v-main>
     </v-app>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/vue@2.x/dist/vue.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.js"></script>
+  <script src="../libs/vue.min.js"></script>
+  <script src="../libs//vuetify.min.js"></script>
   <script type="module" src="./main.js"></script>
 </body>
 </html>

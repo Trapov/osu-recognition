@@ -42,8 +42,6 @@ function setCookie(name, value, options = {}) {
   }
 
   document.cookie = updatedCookie;
-  console.log(document.cookie);
-  console.log(updatedCookie);
 }
 const vue = new Vue({
   el: '#app',
@@ -105,7 +103,6 @@ const vue = new Vue({
   methods: {
     setAdminToken (newValue) {
       setCookie('adminToken', newValue, {expires: new Date().addHours(2) });
-      console.log("cookie was set")
     },
 
     async refreshPage(){
