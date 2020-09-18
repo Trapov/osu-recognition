@@ -5,11 +5,15 @@ import os
 import asyncio
 from abstractions.storages import ImagesStorage
 from pathlib import Path
+import shutil
 
 
 class FileImagesStorage(ImagesStorage):
     def __init__(self, directory : str):
         self.__directory : str = directory
+
+    async def delete_for_user(self, person_id: uuid.UUID) -> None:
+        self.__rm_r(self.__add_base_path_to_path(str(person_id)))
 
     async def save(self, person_id: uuid.UUID, image_type: str, feature_id: uuid.UUID, image: bytes) -> None:
         person_directory = self.__create_if_not_exists(
@@ -21,6 +25,12 @@ class FileImagesStorage(ImagesStorage):
         async with aiofiles.open(file=full_image_path, mode='wb') as fp:
             await fp.write(image)
 
+
+    def __rm_r(self, path):
+        if os.path.isdir(path) and not os.path.islink(path):
+            shutil.rmtree(path)
+        elif os.path.exists(path):
+            os.remove(path)
 
     def __last_path_to_uuid(self, path : str) -> uuid.UUID:
         return uuid.UUID(os.path.split(path)[-1])

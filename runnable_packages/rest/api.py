@@ -21,7 +21,8 @@ from use_cases import \
     get_paged_recognition_settings, \
     save_or_update_recognition_settings, \
     get_current_recognition_settings, \
-    create_or_get_distances_for
+    create_or_get_distances_for, \
+    delete_user
 
 bearer = HTTPBearer()
 
@@ -112,6 +113,18 @@ async def get_nearest(*, idx : uuid.UUID, token: HTTPBearer = Depends(bearer)):
     
     return result
 
+@app.delete("/users/{idx}", tags=['users'], status_code=200)
+async def delete_iser(*, idx: uuid.UUID, token: HTTPBearer = Depends(bearer)):
+    raise_if_not_admin(token.credentials)
+
+    await delete_user.handle(
+        user_id=idx,
+        images_storage=SINGLETON_CONTAINER.images_storage,
+        users_storage=SINGLETON_CONTAINER.users_storage
+    )
+    
+    return Response(status_code=200)
+    
 @app.post("/users", tags=['users'], status_code=201)
 async def login_post(*, file: UploadFile  = File(...)):
     img_bytes = await file.read()

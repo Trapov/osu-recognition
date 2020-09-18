@@ -7,6 +7,7 @@ from abstractions import UserFeatures, Feature, ResizeFactors
 
 import uuid, logging
 import datetime
+import statistics
 
 async def handle(
         user_id: uuid.UUID,
@@ -38,7 +39,58 @@ async def handle(
             }
 
             distances.setdefault(str(user_features.user_id), {}).update(dists)
-        
-    return distances
+    
+    distances = [
+        { 
+            "user_id": idx,
+            "features": [
+                { 
+                    "feature_id_from" : feature_id,
+                    "features_to":  [
+                        { 
+                             "feature_id_to" : feature_id_to, 
+                             "distance": distances[idx][feature_id][feature_id_to] 
+                        }  for feature_id_to in distances[idx][feature_id] 
+                    ]
+                } for feature_id in distances[idx]] 
+        } for idx in distances
+    ]
 
-    # return closest_user_id
+    distances = [
+        { 
+            "user_id": user["user_id"],
+            "features": [
+                { 
+                    "feature_id_from" : feature_from["feature_id_from"],
+                    "distance": statistics.median([ft["distance"] for ft in feature_from["features_to"]]),
+                    "features_to":  [
+                        { 
+                             "feature_id_to" : feature_to["feature_id_to"],
+                             "distance": feature_to["distance"],
+                        } for feature_to in feature_from["features_to"]
+                    ]
+                } for feature_from in user['features']
+            ] 
+        } for user in distances
+    ]
+
+    distances = [d for d in sorted([
+        { 
+            "user_id": user["user_id"],
+            "distance": statistics.median([us["distance"] for us in user["features"]]),
+            "features": [
+                { 
+                    "feature_id_from" : feature_from["feature_id_from"],
+                    "distance": feature_from["distance"],
+                    "features_to":  [
+                        { 
+                             "feature_id_to" : feature_to["feature_id_to"],
+                             "distance": feature_to["distance"],
+                        } for feature_to in sorted(feature_from["features_to"], key=lambda x : x["distance"], reverse=False)
+                    ]
+                } for feature_from in sorted(user['features'], key=lambda x: x["distance"], reverse=False)
+            ]
+        } for user in distances
+    ], key=lambda x: x["distance"], reverse=False)]
+
+    return distances

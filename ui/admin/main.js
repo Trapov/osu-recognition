@@ -20,6 +20,8 @@ function getCookie(name) {
   return matches ? decodeURIComponent(matches[1]) : undefined;
 }
 
+
+
 function setCookie(name, value, options = {}) {
 
   options = {
@@ -103,6 +105,10 @@ const vue = new Vue({
   methods: {
     setAdminToken (newValue) {
       setCookie('adminToken', newValue, {expires: new Date().addHours(2) });
+    },
+
+    onUserDeleted(id) {
+      this.usersPage.items = this.usersPage.items.filter(i => i.id !== id);
     },
 
     async refreshPage(){

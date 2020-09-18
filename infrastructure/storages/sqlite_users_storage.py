@@ -29,11 +29,30 @@ class SqliteUsersStorage(UsersStorage):
         )
         await self.__pooled_connection.commit()
 
+    async def delete_user(self, user_id) -> None:
+        if not self.__pooled_connection:
+            self.__pooled_connection = await aiosqlite.connect(self.__sqlite_file)
+            self.__pooled_connection.row_factory = aiosqlite.Row
+
+        await self.__pooled_connection.execute('''
+            PRAGMA foreign_keys = ON;
+        ''')
+        await self.__pooled_connection.execute('''
+            delete from "User"  
+            where "user_id"= ?
+        ''', parameters=[str(user_id)]
+        )
+        await self.__pooled_connection.commit()
+
     async def delete_grant(self, user_id: uuid.UUID, grant: str) -> None:
         if not self.__pooled_connection:
             self.__pooled_connection = await aiosqlite.connect(self.__sqlite_file)
             self.__pooled_connection.row_factory = aiosqlite.Row
 
+        await self.__pooled_connection.execute('''
+            PRAGMA foreign_keys = ON;
+        ''')
+        
         await self.__pooled_connection.execute('''
             delete from "Grant"  
             where "user_id"= ? and "grant" = ?

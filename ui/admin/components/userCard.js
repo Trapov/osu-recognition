@@ -5,73 +5,117 @@ const UserCard = {
       'admin-highlight': isAdmin
     }" :loading="loading">
       <v-dialog
+        fullscreen
         v-model="nearestDialog"
       >
-      <v-card :loading="loading" flat>
-      <v-card-actions>
-        <v-container fluid>
-        <v-row align="center" justify="center">
-          <v-col cols="8">
-            <v-text-field v-model="nearestSearch" clearable counter prepend-icon="search">
-            </v-text-field>
-          </v-col>
-        </v-row>
-        </v-container>
-      </v-card-actions>
-      <v-card-text>
-        <v-list>
-          <v-list-group prepend-icon="" sub-group v-for="(users, user_id) in computedNearest" :key="user_id">
-            <template v-slot:activator>
-              <v-list-item-content>
-               <span> Near user <span style="color:rgb(153,153,0)"> [{{user_id}}] </span> </span>
-              </v-list-item-content>
-            </template>
+        <v-card style="overflow-x:hidden" :loading="loading">
+        
+          <v-card-actions>
+            <v-container fluid>
+              <v-row align="center" justify="center">
+                <v-col cols="10">
+                <v-text-field v-model="nearestSearch" clearable counter prepend-icon="search">
+                </v-text-field>
+                </v-col>
+              </v-row>
+            </v-container>
+          </v-card-actions>
 
-            <v-list-group prepend-icon="" sub-group v-for="(user_features, feature_id_from) in users" :key="feature_id_from">
-              <template v-slot:activator>
-              <v-list-item-avatar size="60">
-              <v-img
-                :src="toFeatureUrl(item.id, feature_id_from)"
-              >
-            </v-list-item-avatar>
-                <v-list-item-subtitle>
-                  This feature similar to {{ Object.getOwnPropertyNames(user_features).length - 1 }} other feature(s)
-                </v-list-item-subtitle>
+          <v-card-text>
+            <v-container fluid>
+              <v-list dense>
+              <v-row align="center" justify="center" v-for="nearest_user in computedNearest" :key="nearest_user.user_id" >
+                <v-col cols="12">
+                  <v-list-group no-action ripple two-line prepend-icon="" sub-group>
+                    <template v-slot:activator>
+                        <v-row align="center" justify="space-around">
+                          <v-list-item-content>
+                            <v-list-item-title> 
+                              {{ (Math.floor((1 - nearest_user.distance) * 100)) + ' %' }}
+                            </v-list-item-title>
+                            <v-list-item-subtitle style="color:rgb(153,153,0)">
+                              [{{nearest_user.user_id}}]
+                            </v-list-item-subtitle>
+                          </v-list-item-content>
 
-              </template>
+                          <v-btn @click.stop="" small dense>
+                            <v-icon>
+                              link
+                            </v-icon> 
+                          </v-btn>
 
-              <v-list-item v-for="(distance, feature_id_to) in user_features" :key="feature_id_to"> 
+                        </v-row>
+                    </template>
+                    <v-list-group value="" no-action ripple two-line prepend-icon="" sub-group v-for="feature in nearest_user.features" :key="feature.feature_id_from">
+                      <template v-slot:activator>
+                      <v-row>
+                        <v-list-item-avatar size="55">
+                          <v-img
+                            :src="toFeatureUrl(item.id, feature.feature_id_from)"
+                          >
+                        </v-list-item-avatar>
+                        <v-list-item-content>
+                          <v-list-item-title v-text="(Math.floor((1 - feature.distance) * 100)) + ' %'"></v-list-item-title>
 
-                <v-list-item-avatar size="55">
-                  <v-img
-                    :src="toFeatureUrl(user_id, feature_id_to)"
-                  >
-                </v-list-item-avatar> 
-                <v-list-item-content>
-                  <v-list-item-title v-text="(Math.floor((1 - distance) * 100)) + ' %'"></v-list-item-title>
-                  <v-list-item-subtitle v-text="feature_id_to"></v-list-item-subtitle>
-                </v-list-item-content>
-              </v-list-item>
-            </v-list-group>
+                          <v-list-item-subtitle>
+                            This feature similar to {{ feature.features_to.length }} other feature(s)
+                          </v-list-item-subtitle>
+                        </v-list-item-content>
+                      </v-row>
+                      </template>
 
-          </v-list-group>
+                      <v-container fluid>
+                      <v-list-item dense v-for="feature_to in feature.features_to" :key="feature_to.feature_id_to"> 
+                      <v-row>
+                        <v-list-item-avatar size="55">
+                          <v-img
+                            :src="toFeatureUrl(nearest_user.user_id, feature_to.feature_id_to)"
+                          >
+                        </v-list-item-avatar> 
+                        <v-list-item-content>
+                          <v-list-item-title v-text="(Math.floor((1 - feature_to.distance) * 100)) + ' %'"></v-list-item-title>
+                          <v-list-item-subtitle v-text="feature_to.feature_id_to"></v-list-item-subtitle>
+                        </v-list-item-content>
+                        </v-row>
+                      </v-list-item>
+                      </v-container>
 
-        </v-list>
-      </v-card-text>
-      <v-card-actions>
-        <v-container fluid>
-          <v-row align="center" justify="center">
-            <v-btn @click="recalculate" block text large>
-              <span> Recalculate
-                <v-icon>
-                  calculate
-                </v-icon> 
-              </span>
-            </v-btn>
-          </v-row>
-        </v-container>
-      </v-card-actions>
-      </v-card>
+                    </v-list-group>
+                  </v-list-group>
+                </v-col>
+                </v-row>
+              </v-list>
+            </v-container>
+          </v-card-text>
+    
+
+          <v-card-actions>
+            <v-container fluid>
+              <v-row align="center" justify="center">
+
+                <v-btn @click="recalculate" text>
+                  <span> Recalculate
+                    <v-icon>
+                      calculate
+                    </v-icon> 
+                  </span>
+                </v-btn>
+
+                <v-btn text @click="nearestDialog = !nearestDialog">
+                  <span>
+                    Cancel
+                  <v-icon>
+                    cancel
+                  </v-icon>
+                  </span>
+                </v-btn>
+
+              </v-row>
+            </v-container>
+          </v-card-actions>
+
+        </v-card>
+
       </v-dialog>
 
       <div>
@@ -93,6 +137,7 @@ const UserCard = {
         <v-btn
           @click="showToken()"
           top
+          left
           absolute
         >
           <v-icon>mdi-lastpass</v-icon>
@@ -171,13 +216,18 @@ const UserCard = {
           </v-list-item>
         </v-list>
       </v-card-text>
+      <v-card-actions>
+        <v-btn @click="deleteUser()" text block>
+          Delete
+        </v-btn>
+      </v-card-actions>
     </v-card>
     `,
     data() {
       return {
         loading: false,
         userToken: '',
-        nearest: null,
+        nearest: [],
         showUserToken: false,
         showUserNearest: false,
         nearestSearch: "",
@@ -201,18 +251,36 @@ const UserCard = {
         if (!this.nearestSearch) {
           return this.nearest;
         }
-        return Object.keys(this.nearest)
-        .filter(key => key.includes(this.nearestSearch))
-        .reduce((obj, key) => {
-          obj[key] = this.nearest[key];
-          return obj;
-        }, {});
+        return this.nearest.filter(s => {
+          return s.user_id.includes(this.nearestSearch) 
+        });
       },
       isAdmin: function() {
         return this.item.grants.includes("admin");
       }
     },
     methods: {
+      async deleteUser() {
+        try{
+          this.loading = true;
+          const result = await fetch(`/users/${this.item.id}`, {
+            method: 'DELETE',
+            headers: {
+              'Content-Type' : 'application/json',
+              'Authorization': `Bearer ${this.adminToken}`
+            }
+          });
+
+          this.$emit("deleted", this.item.id);
+        }
+        catch(exception){
+          console.error(exception)
+        }
+        finally{
+          this.loading = false;
+
+        }
+      },
       async recalculate() {
         await this.getNearest()
       },
@@ -227,7 +295,7 @@ const UserCard = {
             }
           });
 
-          const theJson = await result.json()
+          const theJson = await result.json();
           this.nearest = theJson;
         }
         finally{
@@ -235,7 +303,7 @@ const UserCard = {
         }
       },
       async showNearest() {
-        if (this.nearest == null) {
+        if (this.nearest.length == 0) {
           await this.getNearest();
         }
 

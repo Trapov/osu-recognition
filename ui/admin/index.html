@@ -191,16 +191,14 @@
     <v-app>
       <v-system-bar>
         <v-container fluid>
-          <v-row>
-            <v-col cols="8" lg="11" sm="10">
-            </v-col>
-            <v-col cols="4" lg="1" sm="2">
-              <v-switch
-                v-model="$vuetify.theme.dark"
-                :prepend-icon="$vuetify.theme.dark ? 'mdi-lightbulb' : 'mdi-lightbulb-outline'"
-              >
-              </v-switch>
-            </v-col>
+          <v-row align="baseline" justify="end">
+            
+            <v-switch
+              v-model="$vuetify.theme.dark"
+              :prepend-icon="$vuetify.theme.dark ? 'mdi-lightbulb' : 'mdi-lightbulb-outline'"
+            >
+            </v-switch>
+            
           </v-row>
         </v-container>
       </v-system-bar>
@@ -235,7 +233,7 @@
                   :key="item.id"
                 >
                 
-                  <user-card :item="item" :admin-token="adminToken">
+                  <user-card @deleted="onUserDeleted" :item="item" :admin-token="adminToken">
                   </user-card>
                 </v-col>
               </v-row>

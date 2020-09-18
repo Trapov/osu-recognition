@@ -28,5 +28,9 @@ class UsersStorage(ABC):
         ...
 
     @abstractmethod
+    async def delete_user(self, user_id: uuid.UUID) -> None:
+        ...
+
+    @abstractmethod
     async def count(self) -> int:
         ...
