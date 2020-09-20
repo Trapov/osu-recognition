@@ -8,5 +8,6 @@ async def handle(
         images_storage: ImagesStorage,
         users_storage: UsersStorage) -> None:
     
+    #todo: in one transaction
     await images_storage.delete_for_user(person_id=user_id)
     await users_storage.delete_user(user_id=user_id)

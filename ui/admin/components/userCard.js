@@ -38,7 +38,7 @@ const UserCard = {
                             </v-list-item-subtitle>
                           </v-list-item-content>
 
-                          <v-btn @click.stop="" small dense>
+                          <v-btn @click.stop="link(nearest_user.user_id)" small dense>
                             <v-icon>
                               link
                             </v-icon> 
@@ -61,6 +61,7 @@ const UserCard = {
                             This feature similar to {{ feature.features_to.length }} other feature(s)
                           </v-list-item-subtitle>
                         </v-list-item-content>
+
                       </v-row>
                       </template>
 
@@ -74,8 +75,15 @@ const UserCard = {
                         </v-list-item-avatar> 
                         <v-list-item-content>
                           <v-list-item-title v-text="(Math.floor((1 - feature_to.distance) * 100)) + ' %'"></v-list-item-title>
-                          <v-list-item-subtitle v-text="feature_to.feature_id_to"></v-list-item-subtitle>
+                          <v-list-item-subtitle v-text="feature_to.feature_id_to.split('.')[0]"></v-list-item-subtitle>
                         </v-list-item-content>
+                        
+                          <v-btn @click.stop="link_feature(nearest_user.user_id, feature_to.feature_id_to.split('.')[0])" small dense>
+                            <v-icon>
+                              link
+                            </v-icon> 
+                          </v-btn>
+                          
                         </v-row>
                       </v-list-item>
                       </v-container>
@@ -178,6 +186,16 @@ const UserCard = {
         </v-card-title>
       </v-img>
       </div>
+      <v-card-actions>
+        <v-btn v-if="item.features.values.length > 1"
+          @click="deleteFeature"
+          block
+          text
+          color="red"
+        >
+          Delete feature
+        </v-btn>
+      </v-card-actions>
       <v-card-text>
         <v-text-field readonly append-icon="date_range" v-model="item.created_at">
         </v-text-field>
@@ -217,7 +235,7 @@ const UserCard = {
         </v-list>
       </v-card-text>
       <v-card-actions>
-        <v-btn @click="deleteUser()" text block>
+        <v-btn @click="deleteUser()" color="red"  block>
           Delete
         </v-btn>
       </v-card-actions>
@@ -260,6 +278,83 @@ const UserCard = {
       }
     },
     methods: {
+      async link_feature(user_id, feature_id) {
+        const user_id_to = this.item.id
+
+        console.warn("LINKING ", user_id, user_id_to)
+
+        try {
+          this.loading = true;
+          const result = await fetch(`/users/link/feature`, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type' : 'application/json',
+              'Authorization': `Bearer ${this.adminToken}`
+            },
+            body: JSON.stringify({
+              'user_id': user_id,
+              'feature_id': feature_id,
+              'user_id_to': user_id_to
+            })
+          });
+
+          await this.getNearest();
+
+        }
+        finally{
+          this.loading = false;
+        }
+      },
+      async link(user_id) {
+        const user_id_to = this.item.id
+
+        console.warn("LINKING ", user_id, user_id_to)
+
+        try {
+          this.loading = true;
+          const result = await fetch(`/users/link`, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type' : 'application/json',
+              'Authorization': `Bearer ${this.adminToken}`
+            },
+            body: JSON.stringify({
+              'user_id': user_id,
+              'user_id_to': user_id_to
+            })
+          });
+
+          await this.getNearest();
+
+        }
+        finally{
+          this.loading = false;
+        }
+      },
+      async deleteFeature() {
+        try{
+          this.loading = true;
+          const result = await fetch(`/users/${this.item.id}/features/${this.item.features.values[this.currentImageIndex].feature_id}`, {
+            method: 'DELETE',
+            headers: {
+              'Content-Type' : 'application/json',
+              'Authorization': `Bearer ${this.adminToken}`
+            }
+          });
+
+          if (result.status == 200)
+          {
+            this.item.features.values.splice(this.currentImageIndex, 1);
+          }
+        }
+        catch(exception){
+          console.error(exception)
+        }
+        finally{
+          this.loading = false;
+
+        }
+      },
       async deleteUser() {
         try{
           this.loading = true;
@@ -271,7 +366,10 @@ const UserCard = {
             }
           });
 
-          this.$emit("deleted", this.item.id);
+          if (result.status == 200)
+          {
+            this.$emit("deleted", this.item.id);
+          }
         }
         catch(exception){
           console.error(exception)
@@ -347,7 +445,11 @@ const UserCard = {
         return `/users/${user_id}/${image_name}`
       },
       toUrl() {
-        return `/users/${this.item.id}/${this.item.features.values[this.currentImageIndex].image_name}`
+        if (this.item.features.values[this.currentImageIndex]) {
+          return `/users/${this.item.id}/${this.item.features.values[this.currentImageIndex].image_name}`
+        }
+
+        return ""
       },
       canGoBack() {
         return this.currentImageIndex != 0;

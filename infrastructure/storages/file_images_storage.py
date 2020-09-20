@@ -5,7 +5,7 @@ import os
 import asyncio
 from abstractions.storages import ImagesStorage
 from pathlib import Path
-import shutil
+import shutil, glob
 
 
 class FileImagesStorage(ImagesStorage):
@@ -14,6 +14,35 @@ class FileImagesStorage(ImagesStorage):
 
     async def delete_for_user(self, person_id: uuid.UUID) -> None:
         self.__rm_r(self.__add_base_path_to_path(str(person_id)))
+
+    async def delete(self, person_id: uuid.UUID, feature_id: uuid.UUID):
+        person_directory = self.__add_base_path_to_path(str(person_id))
+
+        full_image_path = os.path.join(person_directory, f'{str(feature_id)}.*')
+        found_files = glob.glob(full_image_path)
+        if len(found_files) > 0:
+            os.remove(found_files[0])
+
+
+    async def get(self, person_id: uuid.UUID, feature_id: uuid.UUID):
+        person_directory = self.__create_if_not_exists(
+            self.__add_base_path_to_path(str(person_id))
+        )
+        
+        full_image_path = os.path.join(person_directory, f'{str(feature_id)}.*')
+        found_files = glob.glob(full_image_path)
+
+        if len(found_files) == 0:
+            raise FileNotFoundError(full_image_path)
+        
+        full_image_path = found_files[0]
+        
+        file_content = None
+        async with aiofiles.open(file=full_image_path, mode='rb') as f:
+            file_content = await f.read()
+
+        return file_content
+
 
     async def save(self, person_id: uuid.UUID, image_type: str, feature_id: uuid.UUID, image: bytes) -> None:
         person_directory = self.__create_if_not_exists(

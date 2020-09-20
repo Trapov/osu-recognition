@@ -22,7 +22,10 @@ from use_cases import \
     save_or_update_recognition_settings, \
     get_current_recognition_settings, \
     create_or_get_distances_for, \
-    delete_user
+    delete_user, \
+    delete_feature, \
+    link_user, \
+    link_feature
 
 bearer = HTTPBearer()
 
@@ -46,6 +49,15 @@ class GrantsBinding(BaseModel):
 class ResizeFactors(BaseModel):
     x : float
     y : float
+
+class LinkUserFeature(BaseModel):
+    user_id: UUID
+    user_id_to: UUID
+    feature_id: UUID
+
+class LinkUser(BaseModel):
+    user_id: UUID
+    user_id_to: UUID
 
 class RecognitionSettingsBinding(BaseModel):
     name: str
@@ -113,6 +125,35 @@ async def get_nearest(*, idx : uuid.UUID, token: HTTPBearer = Depends(bearer)):
     
     return result
 
+@app.patch("/users/link/feature", tags=['users'], status_code=200)
+async def path_link_user_feature(*, token: HTTPBearer = Depends(bearer), link_binding: LinkUserFeature):
+    raise_if_not_admin(token.credentials)
+
+    await link_feature.handle(
+        link_binding.user_id,
+        link_binding.feature_id,
+        link_binding.user_id_to,
+        SINGLETON_CONTAINER.images_storage,
+        SINGLETON_CONTAINER.users_storage,
+        SINGLETON_CONTAINER.features_storage
+    )
+
+    return Response(status_code=200)
+
+@app.patch("/users/link", tags=["users"], status_code=200)
+async def patch_link_user(*, token: HTTPBearer = Depends(bearer), link_binding: LinkUser):
+    raise_if_not_admin(token.credentials)
+
+    await link_user.handle(
+        link_binding.user_id,
+        link_binding.user_id_to,
+        SINGLETON_CONTAINER.images_storage,
+        SINGLETON_CONTAINER.users_storage,
+        SINGLETON_CONTAINER.features_storage
+    )
+
+    return Response(status_code=200)
+
 @app.delete("/users/{idx}", tags=['users'], status_code=200)
 async def delete_iser(*, idx: uuid.UUID, token: HTTPBearer = Depends(bearer)):
     raise_if_not_admin(token.credentials)
@@ -151,6 +192,20 @@ async def login_post(*, file: UploadFile  = File(...)):
     except create_or_get_user.NoFeaturesExtracted:
         raise HTTPException(status_code=400, detail='Faces found, but no features extracted from the face, Try contacting the support.')
 
+@app.delete("/users/{user_id}/features/{feature_id}", tags=['users'], status_code=200)
+async def feature_delete(*, user_id: uuid.UUID, feature_id: uuid.UUID, token: HTTPBearer = Depends(bearer)):
+    raise_if_not_admin(token.credentials)
+
+    await delete_feature.handle(
+        user_id=user_id,
+        feature_id=feature_id,
+        images_storage=SINGLETON_CONTAINER.images_storage,
+        features_storage=SINGLETON_CONTAINER.features_storage
+    )
+
+    return Response(status_code=200)
+
+
 @app.post("/settings", tags=['settings'], status_code=201)
 async def settings_save(*, token: HTTPBearer = Depends(bearer), settings : RecognitionSettingsBinding) -> None:
     raise_if_not_admin(token.credentials)
@@ -181,6 +236,7 @@ async def settings_get(*, token: HTTPBearer = Depends(bearer)) -> dict:
             'y': result.resize_factors.y
         }
     }
+
 
 @app.get("/settings", tags=['settings'], status_code=200)
 async def settings_get(*, token: HTTPBearer = Depends(bearer), offset: int = Query(0), count: int = Query(20)) -> List[dict]:

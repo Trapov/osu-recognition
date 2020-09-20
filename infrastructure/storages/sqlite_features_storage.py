@@ -22,9 +22,26 @@ class SqliteFeaturesStorage(FeaturesStorage):
             self.__pooled_connection = await aiosqlite.connect(self.__sqlite_file)
             self.__pooled_connection.row_factory = aiosqlite.Row
 
-            await self.__pooled_connection.execute('INSERT INTO "Feature" ("user_id", "feature_id", "image_type", "feature", "created_at") values(?, ?, ?, ?, ?)',
-                 parameters=[str(user_id), str(feature_id), image_type, feature, str(created_at)])
-            await self.__pooled_connection.commit()
+        await self.__pooled_connection.execute('insert or replace into "Feature" ("user_id", "feature_id", "image_type", "feature", "created_at") values(?, ?, ?, ?, ?)',
+            parameters=[str(user_id), str(feature_id), image_type, feature, str(created_at)])
+        await self.__pooled_connection.commit()
+
+    async def delete(self, user_id: uuid.UUID, idx: uuid.UUID):
+        if not self.__pooled_connection:
+            self.__pooled_connection = await aiosqlite.connect(self.__sqlite_file)
+            self.__pooled_connection.row_factory = aiosqlite.Row
+
+        await self.__pooled_connection.execute('''
+            PRAGMA foreign_keys = ON;
+        ''')
+        await self.__pooled_connection.execute('''
+            delete from "Feature"  
+            where "user_id"=? and "feature_id"= ?
+        ''', parameters=[str(user_id), str(idx)]
+        )
+
+        await self.__pooled_connection.commit()
+
 
     async def enumerate_for(self, idx : uuid.UUID) -> AsyncIterator[UserFeatures]:
         if not self.__pooled_connection:

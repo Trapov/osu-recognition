@@ -10,6 +10,10 @@ class FeaturesStorage(ABC):
         ...
 
     @abstractmethod
+    async def delete(self, user_id: uuid.UUID, idx: uuid.UUID) -> None:
+        ...
+
+    @abstractmethod
     async def enumerate_for(self, idx : uuid.UUID) -> AsyncIterator[UserFeatures]:
         ...
 

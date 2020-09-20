@@ -24,7 +24,7 @@ class SqliteUsersStorage(UsersStorage):
             self.__pooled_connection.row_factory = aiosqlite.Row
 
         await self.__pooled_connection.execute('''
-            insert or ignore into "User" ("user_id", "created_at") values(?,?)
+            insert or replace into "User" ("user_id", "created_at") values(?,?)
         ''', parameters=[str(user_id), str(created_at)]
         )
         await self.__pooled_connection.commit()
