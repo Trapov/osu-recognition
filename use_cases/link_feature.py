@@ -27,5 +27,6 @@ async def handle(
 
     await features_storage.delete(user_id, feature.idx)
     img = await images_storage.get(user_id, feature.idx)
-    await images_storage.save(user_id, feature.image_type, feature.idx, img) 
-    await images_storage.get(user_id, feature.idx)
+
+    await images_storage.save(user_id_to, feature.image_type, feature.idx, img) 
+    await images_storage.delete(user_id, feature.idx)
