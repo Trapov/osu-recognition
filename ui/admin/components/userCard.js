@@ -225,7 +225,7 @@ const UserCard = {
               {{grant}}
             </v-list-item-content>
             <v-list-item-icon>
-              <v-btn @click="deleteGrant(grant)" icon color="warn">
+              <v-btn @click="deleteGrant(grant)" icon >
                 <v-icon>
                   mdi-delete
                 </v-icon>
@@ -235,7 +235,7 @@ const UserCard = {
         </v-list>
       </v-card-text>
       <v-card-actions>
-        <v-btn @click="deleteUser()" color="red"  block>
+        <v-btn @click="deleteUser()" color="error" block>
           Delete
         </v-btn>
       </v-card-actions>

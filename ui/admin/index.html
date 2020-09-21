@@ -270,162 +270,163 @@
           </v-row>
         </v-container>
 
-        <v-container fluid fill-height v-if="currentPage=='options'">
-          <v-row justify="center">
-            <v-banner>
-              <div class="text-h4">
-                Current options
-              </div>
-            </v-banner>
-          </v-row>
-          <v-row justify="center">
-
-            <v-form>
-              <v-container fluid>
-                <v-row>
-                  <v-col
-                    cols="12">
-                    <v-text-field
-                      v-model="settings.name"
-                      :rules="settings.strRules"
-                      persistent-hint
-                      label="name"
-                      required
-                    >
-                    </v-text-field>
+        <v-container fluid v-if="currentPage=='options'">
+          <v-row>
+          <v-col cols="12" md="6">
+            <v-row align="center" justify="center">
+              <v-col>
+                <v-form>
+                <v-card-title>
+                    <v-icon
+                    large
+                    left
+                  >
+                    mdi-note
+                  </v-icon>
+                  <v-text-field
+                    v-model="settings.name"
+                    label="Name of setting"
+                    :rules="settings.strRules"
+                    required
+                  >
+                  </v-text-field>
+                </v-card-title>
+                <v-card-text>
+                  <v-container >
+                  <v-row justify="center" align="center">
+                  <v-col cols="12" md="6">
+                      <v-text-field
+                        v-model="settings.max_features"
+                        :rules="settings.intRules"
+                        prepend-icon="face"
+                        label="Max features"
+                        required
+                      ></v-text-field>
                   </v-col>
-                  <v-col
-                    cols="6">
-                    <v-text-field
-                      v-model="settings.max_features"
-                      :rules="settings.intRules"
-                      prepend-icon="face"
-                      label="Max features"
-                      persistent-hint
-                      solo 
-                      required
-                    ></v-text-field>
-
-                    <v-text-field
-                      v-model="settings.base_threshold"
-                      :rules="settings.floatRules"
-                      label="Base threshold"
-                      prepend-icon="mdi-block-helper"
-                      persistent-hint
-                      solo
-                      required
-                    ></v-text-field>
-                    <v-text-field
-                      v-model="settings.rate_of_decreasing_threshold_with_each_feature"
-                      :rules="settings.floatRules"
-                      label="Decreasing rate of threashold with each feature"
-                      prepend-icon="mdi-arrow-down-bold-hexagon-outline"
-                      persistent-hint
-                      solo
-                      required
-                    ></v-text-field>
+                  <v-col cols="12" md="6">
+                      <v-text-field
+                        v-model="settings.base_threshold"
+                        :rules="settings.floatRules"
+                        label="Base threshold"
+                        prepend-icon="mdi-block-helper"
+                        required
+                      ></v-text-field>
                   </v-col>
-                  <v-col
-                    cols="6">
+                  <v-col cols="12" md="6">
                     <v-text-field
                       v-model="settings.resize_factors.x"
                       :rules="settings.floatRules"
                       prepend-icon="mdi-crop"
                       label="X resize factor"
                       prepend-icon="mdi-crop"
-                      persistent-hint
-                      solo
                       required
                     ></v-text-field>
+                  </v-col>
+                  <v-col cols="12" md="6">
                     <v-text-field
                       v-model="settings.resize_factors.y"
                       :rules="settings.floatRules"
                       label="Y resize factor"
                       prepend-icon="mdi-crop"
-                      persistent-hint
-                      solo
                       required
                     ></v-text-field>
+                  </V-col>
+                  <v-col cols="12">
+                      <v-text-field
+                        v-model="settings.rate_of_decreasing_threshold_with_each_feature"
+                        :rules="settings.floatRules"
+                        label="Decreasing rate of threashold with each feature"
+                        prepend-icon="mdi-arrow-down-bold-hexagon-outline"
+                        required
+                      ></v-text-field>
                   </v-col>
-                </v-row>
-                <v-row justify="center">
-                  <v-btn
-                    @click="saveSettings(settings)"
-                    dark
-                    big
-                    text
-                    color="green">
-                    Save
-                  </v-btn>
-                </v-row>
-              </v-container>         
-            </v-form>
-          </v-row>
-          <v-row justify="center">
-            <v-banner>
+                  <v-col cols="12">
+                    <v-select
+                      disabled
+                      v-model="settings.storage_backend"
+                      prepend-icon="mdi-file"
+                      :items="['sqlite', 'postgresql']"
+                      label="Storage backend"
+                    ></v-select>
+                  </v-col>
+                  </v-row>
+                  </v-container>
+                  </v-card-text>
+                  <v-card-actions>
+                    <v-btn
+                      @click="saveSettings(settings)"
+                      big
+                      block
+                      color="success">
+                      Save
+                    </v-btn>
+                  </v-card-actions>
+                </v-form>
+              </v-col>
+            </v-row>
+          </v-col>
+          <v-col cols="12" md="6">
+            <v-row justify="center">
               <div class="text-h4">
                 History
               </div>
-            </v-banner>
-          </v-row>
-          <v-data-iterator
-            :loading="loading"
-            :items="settingsPage.items"
-            :hide-default-footer="true">
+            </v-row>
+            <v-row  align="center" justify="center">
+              <v-data-iterator
+                :loading="loading"
+                :items="settingsPage.items"
+                :hide-default-footer="true">
 
-              <template v-slot:no-data>
-                <div class="text-h4">
-                  No history . . .
-                </div>
-              </template>
+                  <template v-slot:no-data>
+                    <div class="text-h4">
+                      No history . . .
+                    </div>
+                  </template>
 
-            <template v-slot:default="{ items }">
-              <v-container>
-              <v-row>
-                <v-col
-                  v-for="item in items"
-                  :key="item.name"
-                >
-                  <v-card
-                  @click="pickNewSettings(item)">
-                    <v-card-title>
-                      {{ item.name }}
-                    </v-card-title>
-                    <v-card-text>
-                      <v-icon>mdi-face</v-icon> {{ item.max_features }}
-                    </v-card-text>
-                    <v-card-text>
-                      <v-icon> mdi-block-helper </v-icon> Base threshold {{item.base_threshold}}
-                    </v-card-text>
-                    <v-card-text>
-                      <v-icon> mdi-arrow-down-bold-hexagon-outline </v-icon>Decreasing rate {{item.rate_of_decreasing_threshold_with_each_feature}}
-                    </v-card-text>
-                    <v-card-text>
-                      <v-icon> mdi-crop </v-icon> Resize factor x{{item.resize_factors.x}}
-                    </v-card-text>
+                <template v-slot:default="{ items }">
+                  <v-container fluid>
+                    <v-row justify="center">
+                      <v-card style="margin:5px"
+                        v-for="item in items"
+                        :key="item.name"
+                        @click="pickNewSettings(item)">
+                        <v-card-subtitle>
+                          {{ item.name }}
+                        </v-card-subtitle>
+                        <v-card-text>
+                          <v-text-field  disabled label="Max faces" prepend-icon="mdi-face" v-model="item.max_features">
+                          </v-text-field>
+                          <v-text-field  disabled label="Base threshold " prepend-icon="mdi-block-helper " v-model="item.base_threshold">
+                          </v-text-field>
+                          <v-text-field  disabled label="Decreasing rate" prepend-icon="mdi-arrow-down-bold-hexagon-outline" v-model="item.rate_of_decreasing_threshold_with_each_feature">
+                          </v-text-field>
+                          <v-text-field  disabled label="Resize factor x" prepend-icon="mdi-crop" v-model="item.resize_factors.x">
+                          </v-text-field>
+                          
+                          <v-text-field  disabled label="Resize factor y" prepend-icon="mdi-crop" v-model="item.resize_factors.y">
+                          </v-text-field>
 
-                    <v-card-text>
-                      <v-icon> mdi-crop </v-icon> Resize factor y{{item.resize_factors.y}}
-                    </v-card-text>     
-                  </v-card>
-              </v-row>
-              </v-container>
-            </template>
-          </v-data-iterator>
-
-          </v-row>
+                        </v-card-text>
+   
+                      </v-card>
+                    </v-row>
+                  </v-container>
+                </template>
+              </v-data-iterator>
+            </v-row>
+            <v-row align="center" justify="center">
+              <v-btn @click="goBackSettings()" v-if="canGoBackSettings()" icon>
+                <v-icon>
+                  mdi-arrow-left
+                </v-icon>
+              </v-btn>
+              <v-btn @click="goForwardSettings()" v-if="canGoForwardSettings()" icon>
+                <v-icon>
+                  mdi-arrow-right
+                </v-icon>
+              </v-btn>
+            </v-row>
           </v-col>
-          <v-row align="center" justify="center">
-            <v-btn @click="goBackSettings()" v-if="canGoBackSettings()" icon>
-              <v-icon>
-                mdi-arrow-left
-              </v-icon>
-            </v-btn>
-            <v-btn @click="goForwardSettings()" v-if="canGoForwardSettings()" icon>
-              <v-icon>
-                mdi-arrow-right
-              </v-icon>
-            </v-btn>
           </v-row>
         </v-container>
 

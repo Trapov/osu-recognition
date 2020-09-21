@@ -73,6 +73,7 @@ const vue = new Vue({
         loading: false,
         valid: true,
         name: '',
+        storage_backend: 'sqlite',
         is_active : '',
         max_features : '',
         base_threshold : '',
