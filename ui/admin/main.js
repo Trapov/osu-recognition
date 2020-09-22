@@ -20,8 +20,6 @@ function getCookie(name) {
   return matches ? decodeURIComponent(matches[1]) : undefined;
 }
 
-
-
 function setCookie(name, value, options = {}) {
 
   options = {
@@ -63,8 +61,13 @@ const vue = new Vue({
       providedAdminToken: '',
       loading: false,
       currentPage: availablePages.AUTH,
+      logsFilter : {
+        warn: true,
+        info: true,
+        error: true
+      },
       settingsPage : {
-        count: 8,
+        count: 2,
         offset: 0,
         total: 0,
         items: []
@@ -85,6 +88,9 @@ const vue = new Vue({
           y: ''
         }
       },
+      metrics: {
+        loading: false,
+      },
       usersPage: {
         count: 8,
         offset: 0,
@@ -94,6 +100,22 @@ const vue = new Vue({
     }
   },
   computed: {
+    logsFiltered() {
+      let filteredValue = this.logs;
+      if (this.logsFilter.info == false) {
+        filteredValue = filteredValue.filter(l => l.levelname != "INFO");
+      }
+
+      if (this.logsFilter.warn == false) {
+        filteredValue = filteredValue.filter(l => l.levelname != "WARN");
+      }
+
+      if (this.logsFilter.error == false) {
+        filteredValue = filteredValue.filter(l => l.levelname != "ERROR");
+      }
+
+      return filteredValue;
+    },
     adminToken : {
       get: function() {
         return this.providedAdminToken || (this.providedAdminToken = getCookie('adminToken'));
@@ -128,7 +150,23 @@ const vue = new Vue({
         this.loading = false;
       }
     },
-
+    async getMetrics() {
+      try{
+        this.loading = true;
+        this.metrics.loading = true;
+        const result = await fetch(`/metrics`, { 
+          headers: {
+            'Authorization': `Bearer ${this.adminToken}`
+          }
+        });
+        const metrics = await result.json();
+        Object.assign(this.metrics, metrics);
+      }
+      finally{
+        this.metrics.loading = false;
+        this.loading = false;
+      }
+    },
     async getCurrentSettings(){
       try{
         this.loading = true;
@@ -230,6 +268,11 @@ const vue = new Vue({
 
     async goToLogs(){
       await this.getLastLogs();
+      const refThis = this;
+      await refThis.getMetrics()
+      setInterval(async function() {
+        await refThis.getMetrics()
+      }, 60000)
       this.currentPage = availablePages.LOGS
     },
 

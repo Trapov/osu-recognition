@@ -17,15 +17,22 @@ async def handle(
     logger = logging.getLogger('use_case__create_or_get_distances_for')
 
 
-    user_features_input = [feature async for feature in features_storage.enumerate_for(user_id)]
+    user_features_input = [
+        item for sublist in [
+            n.features async for n in features_storage.enumerate_for(user_id)
+        ] for item in sublist
+    ]    
+    
     distances = {}
+
+    #todo: only 10 max users
 
     async for user_features in features_storage.enumerate():
 
         if user_features.user_id == user_id:
             continue
 
-        for user_features_input_feature in user_features_input:
+        for user_input_feature in user_features_input:
             dists = {
                 str(user_input_feature.image_name) : { 
                     str(feature.image_name) : distance.tolist() for (feature, distance) in zip(
@@ -35,11 +42,11 @@ async def handle(
                         )
                     )
                 }
-                for user_input_feature in user_features_input_feature.features
             }
 
             distances.setdefault(str(user_features.user_id), {}).update(dists)
     
+
     distances = [
         { 
             "user_id": idx,
@@ -52,7 +59,8 @@ async def handle(
                              "distance": distances[idx][feature_id][feature_id_to] 
                         }  for feature_id_to in distances[idx][feature_id] 
                     ]
-                } for feature_id in distances[idx]] 
+                } for feature_id in distances[idx]
+            ] 
         } for idx in distances
     ]
 

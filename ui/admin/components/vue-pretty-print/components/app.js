@@ -22,6 +22,7 @@
       'is-mouseover__white': !$vuetify.theme.dark && isMouseover,
 
     }"
+    style="cursor:pointer"
     @click="handleClick"
     @mouseover.stop="handleMouseover"
     @mouseout.stop="handleMouseout"

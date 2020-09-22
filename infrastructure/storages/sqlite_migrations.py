@@ -11,6 +11,13 @@ migration_scripts = [
     );
 ''',
 '''
+    create table if not exists "Image" (
+        "image_id" text primary key,
+        "image_type" text,
+        "created_at" text
+    )
+''',
+'''
     create table if not exists "Grant" (
         "user_id" text,
         "grant" text not null,

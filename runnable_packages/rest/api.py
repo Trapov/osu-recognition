@@ -2,13 +2,16 @@ from fastapi import FastAPI, File, UploadFile, Query, Path, HTTPException, Depen
 from fastapi.security import HTTPBearer
 from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
-from os import environ
+from os import environ, getpid
 import uuid, logging.config
 from uuid import UUID
 from typing import List
 from pydantic import BaseModel
 from abstractions import User
 from infrastructure.container import SINGLETON_CONTAINER
+
+from psutil import Process, virtual_memory
+
 from infrastructure.images import get_ndarray_image
 
 from use_cases import \
@@ -81,6 +84,19 @@ async def logs_get(*, token: HTTPBearer = Depends(bearer)) -> dict:
     raise_if_not_admin(token.credentials)
     return get_top_logs()
     
+@app.get("/metrics", tags=['metrics'], status_code=200)
+async def metrics_get(*, token: HTTPBearer = Depends(bearer)) -> dict:
+    raise_if_not_admin(token.credentials)
+    prc = Process(getpid())
+    return {
+        "memory": {
+            'used': prc.memory_info().vms,
+            'total': virtual_memory().total
+        },
+        "cpu": {
+            "utilization" : prc.cpu_percent()
+        }
+    }
 
 @app.post("/tokens", tags=['tokens'], status_code=201)
 async def users_tokens_get(*, token: HTTPBearer = Depends(bearer), token_issue: TokenIssue) -> dict:
