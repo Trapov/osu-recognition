@@ -256,8 +256,34 @@
         <v-container fluid fill-height v-if="currentPage=='logs'">
           <v-row align="center" align-content="space-between" no-gutters justify="space-around">
             <v-col cols="12" md="4">
+            <v-card>
+                <v-container fluid>
+                    <v-card-title> count(logs): {{ logs.length }} </v-card-title>
+                  <v-card-text>
+                  <v-row align="center" justify="space-around">
+                    <v-checkbox v-model="logsFilter.info">
+                      <template v-slot:label>
+                        <span style="color:#0076e4"> Info: {{ logs.filter(l => l.levelname == "INFO").length }} </span>
+                      </template>
+                    </v-checkbox>
+                    <v-checkbox v-model="logsFilter.warn">
+                      <template v-slot:label>
+                        <span style="color:orange"> Warn: {{ logs.filter(l => l.levelname == "WARN").length }} </span>
+                      </template>
+                    </v-checkbox>
+                    <v-checkbox v-model="logsFilter.error">
+                      <template v-slot:label>
+                        <span style="color:#ff4949"> Error: {{ logs.filter(l => l.levelname == "ERROR").length }} </span>
+                      </template>
+                    </v-checkbox>
+                    </v-row>
+                    </v-card-text>
+                  </v-container>
+            </v-card>
+            </v-col>
+            <v-col cols="12" md="4" v-ripple>
               <v-card :loading="metrics.loading">
-                <v-card-text class="text-h5">
+                <v-card-text class="text-h6">
                 <v-container fluid>
                   <v-row align="center" justify="center">
                     <span> <v-icon> mdi-clock </v-icon> CPU: {{ metrics.cpu && metrics.cpu.utilization }} % </span>
@@ -268,34 +294,6 @@
                 </v-container>
                 </v-card-text>
               </v-card>
-            </v-col>
-            <v-col cols="12" md="4">
-            <v-card>
-              <v-card-text>
-                <v-container fluid>
-                  <v-row align="center" justify="center">
-                    <span class="text-h5"> Number of logs: {{ logs.length }} </span>
-                  </v-row>
-                  <v-row align="center" justify="space-around">
-                    <v-checkbox v-model="logsFilter.info">
-                      <template v-slot:label>
-                        <span style="color:#0076e4"> Info: {{ logs.filter(l => l.levelname == "INFO").length }} </span>
-                      </template>
-                    </v-checkbox>
-                    <v-checkbox v-model="logsFilter.warn">
-                      <template v-slot:label>
-                        <span style="color:yellow"> Warn: {{ logs.filter(l => l.levelname == "WARN").length }} </span>
-                      </template>
-                    </v-checkbox>
-                    <v-checkbox v-model="logsFilter.error">
-                      <template v-slot:label>
-                        <span style="color:#ff4949"> Error: {{ logs.filter(l => l.levelname == "ERROR").length }} </span>
-                      </template>
-                    </v-checkbox>
-                    </v-row>
-                  </v-container>
-              </v-card-text>
-            </v-card>
             </v-col>
           </v-row>
           <v-row style="overflow-x: auto;">
@@ -308,7 +306,7 @@
         </v-container>
 
         <v-container fluid v-if="currentPage=='options'">
-          <v-row>
+          <v-row align="center">
           <v-col cols="12" md="6">
             <v-row align="center" justify="center">
               <v-col>
@@ -408,18 +406,6 @@
                 History
               </div>
             </v-row>
-            <v-row align="center" justify="center">
-              <v-btn @click="goBackSettings()" v-if="canGoBackSettings()" icon>
-                <v-icon>
-                  mdi-arrow-left
-                </v-icon>
-              </v-btn>
-              <v-btn @click="goForwardSettings()" v-if="canGoForwardSettings()" icon>
-                <v-icon>
-                  mdi-arrow-right
-                </v-icon>
-              </v-btn>
-            </v-row>
             <v-row  align="center" justify="center">
               <v-data-iterator
                 :loading="loading"
@@ -430,7 +416,7 @@
                     <v-container fluid>
                       <v-row justify="center">
                         <div class="text-h4">
-                          No history . . .
+                          🏝
                         </div>
                       </v-row>
                     </v-container>
@@ -438,7 +424,12 @@
 
                 <template v-slot:default="{ items }">
                   <v-container fluid>
-                    <v-row justify="center">
+                    <v-row align="center" justify="center">
+                      <v-btn @click="goBackSettings()" v-if="canGoBackSettings()" icon>
+                        <v-icon>
+                          mdi-arrow-left
+                        </v-icon>
+                      </v-btn>
                       <v-card style="margin:5px"
                         v-for="item in items"
                         :key="item.name"
@@ -462,22 +453,15 @@
                         </v-card-text>
    
                       </v-card>
+                      <v-btn @click="goForwardSettings()" v-if="canGoForwardSettings()" icon>
+                        <v-icon>
+                          mdi-arrow-right
+                        </v-icon>
+                      </v-btn>
                     </v-row>
                   </v-container>
                 </template>
               </v-data-iterator>
-            </v-row>
-            <v-row align="center" justify="center">
-              <v-btn @click="goBackSettings()" v-if="canGoBackSettings()" icon>
-                <v-icon>
-                  mdi-arrow-left
-                </v-icon>
-              </v-btn>
-              <v-btn @click="goForwardSettings()" v-if="canGoForwardSettings()" icon>
-                <v-icon>
-                  mdi-arrow-right
-                </v-icon>
-              </v-btn>
             </v-row>
           </v-col>
           </v-row>
