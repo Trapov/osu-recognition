@@ -253,36 +253,10 @@
           </v-row>
         </v-container>
 
-        <v-container fluid fill-height v-if="currentPage=='logs'">
-          <v-row align="center" align-content="space-between" no-gutters justify="space-around">
-            <v-col cols="12" md="4">
-            <v-card>
-                <v-container fluid>
-                    <v-card-title> count(logs): {{ logs.length }} </v-card-title>
-                  <v-card-text>
-                  <v-row align="center" justify="space-around">
-                    <v-checkbox v-model="logsFilter.info">
-                      <template v-slot:label>
-                        <span style="color:#0076e4"> Info: {{ logs.filter(l => l.levelname == "INFO").length }} </span>
-                      </template>
-                    </v-checkbox>
-                    <v-checkbox v-model="logsFilter.warn">
-                      <template v-slot:label>
-                        <span style="color:orange"> Warn: {{ logs.filter(l => l.levelname == "WARN").length }} </span>
-                      </template>
-                    </v-checkbox>
-                    <v-checkbox v-model="logsFilter.error">
-                      <template v-slot:label>
-                        <span style="color:#ff4949"> Error: {{ logs.filter(l => l.levelname == "ERROR").length }} </span>
-                      </template>
-                    </v-checkbox>
-                    </v-row>
-                    </v-card-text>
-                  </v-container>
-            </v-card>
-            </v-col>
-            <v-col cols="12" md="4" v-ripple>
-              <v-card :loading="metrics.loading">
+        <v-container fluid v-if="currentPage=='logs'">
+          <v-row align="center" align-content="space-between" justify="space-around">
+            <v-col cols="12">
+              <v-card v-ripple :loading="metrics.loading">
                 <v-card-text class="text-h6">
                 <v-container fluid>
                   <v-row align="center" justify="center">
@@ -293,22 +267,63 @@
                   </v-row>
                 </v-container>
                 </v-card-text>
-              </v-card>
+            </v-card>
+
             </v-col>
           </v-row>
-          <v-row style="overflow-x: auto;">
-            <vue-json-pretty
-              :highlight-mouseover-node="true"
-              :show-length="true"
-              :data="logsFiltered">
-            </vue-json-pretty>
+
+          <v-row align="center" justify="center">
+            <v-col cols="12">
+            <v-card>
+              <v-card-actions>
+                <v-container fluid>
+                  <v-row align="center" justify="center">
+
+                  <v-col cols="12" md="6">
+                      <v-col>
+                        <v-text-field clearable counter v-model="logsSearch" prepend-icon="search">
+                        </v-text-field>
+                        <v-row justify="space-around">
+                          <v-checkbox v-model="logsFilter.info">
+                            <template v-slot:label>
+                              <span style="color:#0076e4"> Info: {{ logsFiltered.filter(l => l.levelname == "INFO").length }} </span>
+                            </template>
+                          </v-checkbox>
+                          <v-checkbox v-model="logsFilter.warn">
+                            <template v-slot:label>
+                              <span style="color:orange"> Warn: {{ logsFiltered.filter(l => l.levelname == "WARN").length }} </span>
+                            </template>
+                          </v-checkbox>
+                          <v-checkbox v-model="logsFilter.error">
+                            <template v-slot:label>
+                              <span style="color:#ff4949"> Error: {{ logsFiltered.filter(l => l.levelname == "ERROR").length }} </span>
+                            </template>
+                          </v-checkbox>
+                        </v-row>
+                      </v-col>
+                  </v-col>
+                </v-row>
+
+                </v-container>               
+              </v-card-actions>
+              <v-card-text>
+                <vue-json-pretty style="overflow-x: auto;"
+                :highlight-mouseover-node="true"
+                :show-length="true"
+                :data="logsFiltered">
+              </vue-json-pretty>                
+              </v-card-text>
+
+            </v-card>
+          </v-col>   
+
           </v-row>
         </v-container>
 
         <v-container fluid v-if="currentPage=='options'">
           <v-row align="center">
           <v-col cols="12" md="6">
-            <v-row align="center" justify="center">
+            <v-row no-gutters align="center" justify="center">
               <v-col>
                 <v-form>
                 <v-card-title>
@@ -328,7 +343,7 @@
                 </v-card-title>
                 <v-card-text>
                   <v-container >
-                  <v-row justify="center" align="center">
+                  <v-row no-gutters justify="center" align="center">
                   <v-col cols="12" md="6">
                       <v-text-field
                         v-model="settings.max_features"
@@ -401,12 +416,12 @@
             </v-row>
           </v-col>
           <v-col cols="12" md="6">
-            <v-row justify="center">
+            <v-row  justify="center">
               <div class="text-h4">
                 History
               </div>
             </v-row>
-            <v-row  align="center" justify="center">
+            <v-row no-gutters align="center" justify="center">
               <v-data-iterator
                 :loading="loading"
                 :items="settingsPage.items"
@@ -421,18 +436,24 @@
                       </v-row>
                     </v-container>
                   </template>
-
                 <template v-slot:default="{ items }">
                   <v-container fluid>
                     <v-row align="center" justify="center">
+                      <v-col cols="12" md="1">
+                        <v-row align="center" justify="center">
+
                       <v-btn @click="goBackSettings()" v-if="canGoBackSettings()" icon>
                         <v-icon>
                           mdi-arrow-left
                         </v-icon>
                       </v-btn>
+                    </v-row>
+
+                    </v-col>
+                    <v-col v-for="item in items"
+                      :key="item.name" cols="12" :md="(12 - 2)/items.length">
                       <v-card style="margin:5px"
-                        v-for="item in items"
-                        :key="item.name"
+                        
                         @click="pickNewSettings(item)">
                         <v-card-subtitle>
                           {{ item.name }}
@@ -453,12 +474,21 @@
                         </v-card-text>
    
                       </v-card>
+                      </v-col>
+
+                      <v-col cols="12" md="1">
+                        <v-row align="center" justify="center">
+
                       <v-btn @click="goForwardSettings()" v-if="canGoForwardSettings()" icon>
                         <v-icon>
                           mdi-arrow-right
                         </v-icon>
                       </v-btn>
+                        </v-row>
+                      </v-col>
+
                     </v-row>
+                    
                   </v-container>
                 </template>
               </v-data-iterator>

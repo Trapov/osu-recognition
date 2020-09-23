@@ -72,6 +72,7 @@ const vue = new Vue({
         total: 0,
         items: []
       },
+      logsSearch: "",
       settings: {
         loading: false,
         valid: true,
@@ -112,6 +113,10 @@ const vue = new Vue({
 
       if (this.logsFilter.error == false) {
         filteredValue = filteredValue.filter(l => l.levelname != "ERROR");
+      }
+
+      if (this.logsSearch) {
+        filteredValue = filteredValue.filter(l => l.msg.includes(this.logsSearch));
       }
 
       return filteredValue;
@@ -218,8 +223,9 @@ const vue = new Vue({
           }
         });
         const settings = await result.json();
-        settings.values = settings.values.filter(v => v.is_active == false);
-        this.settingsPage.total = settings.total;
+        settings.values = settings.values.filter(v => v.is_active === 0);
+
+        this.settingsPage.total = settings.total - 1;
         this.settingsPage.items = settings.values;
       }
       finally{
@@ -295,6 +301,9 @@ const vue = new Vue({
           }
         });
         const page = await result.json();
+
+        page.values = page.values.filter(v => v.is_active === 0);
+
         this.settingsPage.offset = newOffset;
         this.settingsPage.total = page.total;
         this.settingsPage.items = page.values;
@@ -327,6 +336,7 @@ const vue = new Vue({
           }
         });
         const page = await result.json();
+        page.values = page.values.filter(v => v.is_active === 0);
 
         this.settingsPage.offset = newOffset;
         this.settingsPage.total = page.total;
