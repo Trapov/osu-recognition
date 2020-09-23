@@ -222,6 +222,17 @@
             :items="usersPage.items"
             :hide-default-footer="true"
           >
+            <template v-slot:no-data>
+              <v-container fluid>
+                <v-row align="center" justify="center">
+                  <div class="text-h4">
+                    <v-icon>
+                      mdi-golf
+                    </v-icon>
+                  </div>
+                </v-row>
+              </v-container>
+            </template>
             <template v-slot:default="{ items }">
               <v-row>
                 <v-col
@@ -343,7 +354,7 @@
                 </v-card-title>
                 <v-card-text>
                   <v-container >
-                  <v-row no-gutters justify="center" align="center">
+                  <v-row dense justify="center" align="center">
                   <v-col cols="12" md="6">
                       <v-text-field
                         v-model="settings.max_features"
@@ -431,7 +442,9 @@
                     <v-container fluid>
                       <v-row justify="center">
                         <div class="text-h4">
-                          🏝
+                          <v-icon>
+                            mdi-golf
+                          </v-icon>
                         </div>
                       </v-row>
                     </v-container>
