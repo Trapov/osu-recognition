@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 class RecognitionSettingsStorage(ABC):
 
     @abstractmethod
-    async def save(self, settings : RecognitionSettings) -> None:
+    async def save(self, settings : RecognitionSettings, transaction_scope = None) -> None:
         ...
 
     @abstractmethod

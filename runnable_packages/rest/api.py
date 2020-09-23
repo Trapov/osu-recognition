@@ -151,7 +151,8 @@ async def path_link_user_feature(*, token: HTTPBearer = Depends(bearer), link_bi
         link_binding.user_id_to,
         SINGLETON_CONTAINER.images_storage,
         SINGLETON_CONTAINER.users_storage,
-        SINGLETON_CONTAINER.features_storage
+        SINGLETON_CONTAINER.features_storage,
+        SINGLETON_CONTAINER.transaction_context
     )
 
     return Response(status_code=200)
@@ -165,7 +166,8 @@ async def patch_link_user(*, token: HTTPBearer = Depends(bearer), link_binding: 
         link_binding.user_id_to,
         SINGLETON_CONTAINER.images_storage,
         SINGLETON_CONTAINER.users_storage,
-        SINGLETON_CONTAINER.features_storage
+        SINGLETON_CONTAINER.features_storage,
+        SINGLETON_CONTAINER.transaction_context
     )
 
     return Response(status_code=200)
@@ -177,7 +179,8 @@ async def delete_iser(*, idx: uuid.UUID, token: HTTPBearer = Depends(bearer)):
     await delete_user.handle(
         user_id=idx,
         images_storage=SINGLETON_CONTAINER.images_storage,
-        users_storage=SINGLETON_CONTAINER.users_storage
+        users_storage=SINGLETON_CONTAINER.users_storage,
+        transaction_context=SINGLETON_CONTAINER.transaction_context
     )
     
     return Response(status_code=200)
@@ -195,7 +198,8 @@ async def login_post(*, file: UploadFile  = File(...)):
             SINGLETON_CONTAINER.distance_estimator,
             SINGLETON_CONTAINER.users_storage,
             SINGLETON_CONTAINER.recognition_settings_storage,
-            SINGLETON_CONTAINER.images_storage)
+            SINGLETON_CONTAINER.images_storage,
+            SINGLETON_CONTAINER.transaction_context)
 
         token = await to_token_grants.handle(user_id, SINGLETON_CONTAINER.users_storage, SINGLETON_CONTAINER.grants_crypto)
         
@@ -216,7 +220,8 @@ async def feature_delete(*, user_id: uuid.UUID, feature_id: uuid.UUID, token: HT
         user_id=user_id,
         feature_id=feature_id,
         images_storage=SINGLETON_CONTAINER.images_storage,
-        features_storage=SINGLETON_CONTAINER.features_storage
+        features_storage=SINGLETON_CONTAINER.features_storage,
+        transaction_context=SINGLETON_CONTAINER.transaction_context
     )
 
     return Response(status_code=200)

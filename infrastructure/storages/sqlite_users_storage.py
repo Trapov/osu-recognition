@@ -13,59 +13,76 @@ import datetime
 
 class SqliteUsersStorage(UsersStorage):
     def __init__(self, sqlite_file: str):
-        self.__sqlite_file: str = sqlite_file        
-        self.__pooled_connection : aiosqlite.Connection = None
+        self.__sqlite_file: str = sqlite_file
 
+        self.__pooled_connection : aiosqlite.Connection = None
         asyncio.create_task(self.migrations()).add_done_callback(lambda _ : logging.info('Users migrations done'))
 
-    async def upsert(self, user_id: uuid.UUID, created_at: datetime.datetime) -> None:
-        if not self.__pooled_connection:
-            self.__pooled_connection = await aiosqlite.connect(self.__sqlite_file)
-            self.__pooled_connection.row_factory = aiosqlite.Row
+    async def upsert(self, user_id: uuid.UUID, created_at: datetime.datetime, transaction_scope = None) -> None:
+        pooled_connection = transaction_scope if transaction_scope else self.__pooled_connection
 
-        await self.__pooled_connection.execute('''
+        if not pooled_connection:
+            pooled_connection = self.__pooled_connection = await aiosqlite.connect(self.__sqlite_file)
+            pooled_connection.row_factory = aiosqlite.Row
+
+        await pooled_connection.execute('''
             insert or replace into "User" ("user_id", "created_at") values(?,?)
         ''', parameters=[str(user_id), str(created_at)]
         )
-        await self.__pooled_connection.commit()
 
-    async def delete_user(self, user_id) -> None:
-        if not self.__pooled_connection:
-            self.__pooled_connection = await aiosqlite.connect(self.__sqlite_file)
-            self.__pooled_connection.row_factory = aiosqlite.Row
+        if not transaction_scope:
+            await self.__pooled_connection.commit()
 
-        await self.__pooled_connection.execute('''
+
+    async def delete_user(self, user_id, transaction_scope = None) -> None:
+        pooled_connection = transaction_scope if transaction_scope else self.__pooled_connection
+
+        if not pooled_connection:
+            pooled_connection = self.__pooled_connection = await aiosqlite.connect(self.__sqlite_file)
+            pooled_connection.row_factory = aiosqlite.Row
+
+        await pooled_connection.execute('''
             PRAGMA foreign_keys = ON;
         ''')
-        await self.__pooled_connection.execute('''
+
+        await pooled_connection.execute('''
             delete from "User"  
             where "user_id"= ?
         ''', parameters=[str(user_id)]
         )
-        await self.__pooled_connection.commit()
 
-    async def delete_grant(self, user_id: uuid.UUID, grant: str) -> None:
-        if not self.__pooled_connection:
-            self.__pooled_connection = await aiosqlite.connect(self.__sqlite_file)
-            self.__pooled_connection.row_factory = aiosqlite.Row
+        if not transaction_scope:
+            await pooled_connection.commit()
 
-        await self.__pooled_connection.execute('''
+    async def delete_grant(self, user_id: uuid.UUID, grant: str, transaction_scope = None) -> None:
+        pooled_connection = transaction_scope if transaction_scope else self.__pooled_connection
+
+        if not pooled_connection:
+            pooled_connection = self.__pooled_connection = await aiosqlite.connect(self.__sqlite_file)
+            pooled_connection.row_factory = aiosqlite.Row
+
+        await pooled_connection.execute('''
             PRAGMA foreign_keys = ON;
         ''')
         
-        await self.__pooled_connection.execute('''
+        await pooled_connection.execute('''
             delete from "Grant"  
             where "user_id"= ? and "grant" = ?
         ''', parameters=[str(user_id), str(grant)]
         )
-        await self.__pooled_connection.commit()
 
-    async def save(self, user: User) -> None:
-        if not self.__pooled_connection:
-            self.__pooled_connection = await aiosqlite.connect(self.__sqlite_file)
-            self.__pooled_connection.row_factory = aiosqlite.Row  
-        
-        await self.__pooled_connection.execute('''
+        if not transaction_scope:
+            await pooled_connection.commit()
+
+
+    async def save(self, user: User, transaction_scope = None) -> None:
+        pooled_connection = transaction_scope if transaction_scope else self.__pooled_connection
+
+        if not pooled_connection:
+            pooled_connection = self.__pooled_connection = await aiosqlite.connect(self.__sqlite_file)
+            pooled_connection.row_factory = aiosqlite.Row
+
+        await pooled_connection.execute('''
             insert or ignore into "User" ("user_id", "created_at") values(?,?)
         ''', parameters=[str(user.idx), str(user.created_at)]
         )
@@ -74,16 +91,18 @@ class SqliteUsersStorage(UsersStorage):
         grants = [(str(user.idx), g, str(datetime.datetime.utcnow())) for g in user.grants]
 
         if len(features) > 0:
-            await self.__pooled_connection.executemany('''
+            await pooled_connection.executemany('''
                 insert or ignore into "Feature" ("user_id", "feature_id", "image_type", "feature", "created_at") values(?, ?, ?, ?, ?)
             ''', features)
 
         if len(grants) > 0:
-            await self.__pooled_connection.executemany('''
+            await pooled_connection.executemany('''
                 insert or ignore into "Grant" ("user_id", "grant", "created_at") values(?, ?, ?)
             ''', grants)
 
-        await self.__pooled_connection.commit()
+        if not transaction_scope:
+            await pooled_connection.commit()
+
 
     async def count(self) -> int:
         if not self.__pooled_connection:

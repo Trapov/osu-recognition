@@ -11,22 +11,27 @@ import datetime
 class SqliteRecognitionSettingsStorage(RecognitionSettingsStorage):
     def __init__(self, sqlite_file: str):
         self.__sqlite_file: str = sqlite_file
+
         self.__pooled_connection : aiosqlite.Connection = None
+        
         asyncio.create_task(self.migrations()).add_done_callback(lambda _ : logging.info('Recognition settings migrations done'))
         
-    async def save(self, settings : RecognitionSettings) -> None:
-        if not self.__pooled_connection:
-            self.__pooled_connection = await aiosqlite.connect(self.__sqlite_file)
-            self.__pooled_connection.row_factory = aiosqlite.Row
+    async def save(self, settings : RecognitionSettings, transaction_scope = None) -> None:
+        
+        pooled_connection = transaction_scope if transaction_scope else self.__pooled_connection
+        
+        if not pooled_connection:
+            pooled_connection = self.__pooled_connection = await aiosqlite.connect(self.__sqlite_file)
+            pooled_connection.row_factory = aiosqlite.Row
 
         # todo, make constraints
-        await self.__pooled_connection.execute('''
+        await pooled_connection.execute('''
             update "RecognitionSetting"
             set "is_active" = 0
             where "is_active" = 1
         ''')
 
-        await self.__pooled_connection.execute('''
+        await pooled_connection.execute('''
             insert or replace into "RecognitionSetting" (
                 "name",
                 "is_active",
@@ -51,7 +56,9 @@ class SqliteRecognitionSettingsStorage(RecognitionSettingsStorage):
             ]
         )
 
-        await self.__pooled_connection.commit()
+        if not transaction_scope:
+            await pooled_connection.commit()
+
 
     async def get_current(self) -> RecognitionSettings:
         if not self.__pooled_connection:

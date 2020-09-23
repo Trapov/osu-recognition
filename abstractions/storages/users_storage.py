@@ -12,11 +12,11 @@ class UsersStorage(ABC):
         ...
 
     @abstractmethod
-    async def upsert(self, user_id: uuid.UUID, created_at: datetime.datetime) -> None:
+    async def upsert(self, user_id: uuid.UUID, created_at: datetime.datetime, transaction_scope = None) -> None:
         ...
         
     @abstractmethod
-    async def save(self, user: User) -> None:
+    async def save(self, user: User, transaction_scope = None) -> None:
         ...
 
     @abstractmethod
@@ -24,11 +24,11 @@ class UsersStorage(ABC):
         ...
 
     @abstractmethod
-    async def delete_grant(self, user_id: uuid.UUID, grant: str) -> None:
+    async def delete_grant(self, user_id: uuid.UUID, grant: str, transaction_scope = None) -> None:
         ...
 
     @abstractmethod
-    async def delete_user(self, user_id: uuid.UUID) -> None:
+    async def delete_user(self, user_id: uuid.UUID, transaction_scope = None) -> None:
         ...
 
     @abstractmethod

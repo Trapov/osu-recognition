@@ -4,7 +4,7 @@ from infrastructure.images import get_ndarray_image, resize_ndarray
 from statistics import mean
 
 from abstractions.recognition import FaceDetector, FeatureExtractor, DistanceEstimator
-from abstractions.storages import FeaturesStorage, ImagesStorage, UsersStorage, RecognitionSettingsStorage
+from abstractions.storages import FeaturesStorage, TransactionContext, ImagesStorage, UsersStorage, RecognitionSettingsStorage
 from abstractions import User, UserFeatures, Feature, RecognitionSettings, ResizeFactors
 
 import uuid, logging
@@ -49,7 +49,8 @@ async def handle(
         distance_estimator: DistanceEstimator,
         users_storage: UsersStorage,
         settings_storage: RecognitionSettingsStorage,
-        images_storage: ImagesStorage) -> uuid.UUID:
+        images_storage: ImagesStorage,
+        transaction_scope: TransactionContext) -> uuid.UUID:
     logger = logging.getLogger('use_case__create_or_get_user')
 
     settings : RecognitionSettings = await get_settings_cached(settings_storage)
@@ -92,51 +93,54 @@ async def handle(
             closest_user_id, distance_to_closest_user, number_of_features = current_user_id, avg_distance_of_user, len(
                 current_distances)
 
-    if closest_user_id:
-        logger.info(f'Distance to user[{closest_user_id}] = [{distance_to_closest_user}]')
-        threshold = settings.base_threshold - (settings.rate_of_decreasing_threshold_with_each_feature * number_of_features)
-        logger.info(f'Current threshold [{threshold}]')
+    async with transaction_scope as scope:
 
-        if number_of_features <= settings.max_features and distance_to_closest_user <= threshold:
-            feature_id = uuid.uuid4()
+        if closest_user_id:
+            logger.info(f'Distance to user[{closest_user_id}] = [{distance_to_closest_user}]')
+            threshold = settings.base_threshold - (settings.rate_of_decreasing_threshold_with_each_feature * number_of_features)
+            logger.info(f'Current threshold [{threshold}]')
 
-            await users_storage.save(
-                User(
-                    idx=closest_user_id,
-                    user_features=UserFeatures(
-                        closest_user_id, features=[
-                            Feature(
-                                idx=feature_id,
-                                image_type=input_image.type,
-                                created_at=datetime.datetime.utcnow(),
-                                feature=extracted_features.tobytes())
-                        ]),
-                        grants=[],
-                        created_at=datetime.datetime.utcnow()
+            if number_of_features <= settings.max_features and distance_to_closest_user <= threshold:
+                feature_id = uuid.uuid4()
+
+                await users_storage.save(
+                    User(
+                        idx=closest_user_id,
+                        user_features=UserFeatures(
+                            closest_user_id, features=[
+                                Feature(
+                                    idx=feature_id,
+                                    image_type=input_image.type,
+                                    created_at=datetime.datetime.utcnow(),
+                                    feature=extracted_features.tobytes())
+                            ]),
+                            grants=[],
+                            created_at=datetime.datetime.utcnow()
+                    ),
+                    scope
                 )
-            )
-            
-            await images_storage.save(closest_user_id, input_image.type, feature_id, input_image.bytes)
+                
+                await images_storage.save(closest_user_id, input_image.type, feature_id, input_image.bytes, scope)
 
-            return closest_user_id
+                return closest_user_id
 
-    feature_id = uuid.uuid4()
-    closest_user_id = uuid.uuid4()
-    await users_storage.save(
-        User(
-            idx=closest_user_id,
-            user_features=UserFeatures(
-                closest_user_id, features=[
-                    Feature(
-                        idx=feature_id,
-                        image_type=input_image.type,
-                        created_at=datetime.datetime.utcnow(),
-                        feature=extracted_features.tobytes())
-                ]),
-            grants=[],
-            created_at=datetime.datetime.utcnow()
+        feature_id = uuid.uuid4()
+        closest_user_id = uuid.uuid4()
+        await users_storage.save(
+            User(
+                idx=closest_user_id,
+                user_features=UserFeatures(
+                    closest_user_id, features=[
+                        Feature(
+                            idx=feature_id,
+                            image_type=input_image.type,
+                            created_at=datetime.datetime.utcnow(),
+                            feature=extracted_features.tobytes())
+                    ]),
+                grants=[],
+                created_at=datetime.datetime.utcnow()
+            ), scope
         )
-    )
-    await images_storage.save(closest_user_id, input_image.type, feature_id, input_image.bytes)
+        await images_storage.save(closest_user_id, input_image.type, feature_id, input_image.bytes, scope)
 
     return closest_user_id

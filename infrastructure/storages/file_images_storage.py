@@ -12,10 +12,10 @@ class FileImagesStorage(ImagesStorage):
     def __init__(self, directory : str):
         self.__directory : str = directory
 
-    async def delete_for_user(self, person_id: uuid.UUID) -> None:
+    async def delete_for_user(self, person_id: uuid.UUID, transaction_scope = None) -> None:
         self.__rm_r(self.__add_base_path_to_path(str(person_id)))
 
-    async def delete(self, person_id: uuid.UUID, feature_id: uuid.UUID):
+    async def delete(self, person_id: uuid.UUID, feature_id: uuid.UUID, transaction_scope = None):
         person_directory = self.__add_base_path_to_path(str(person_id))
 
         full_image_path = os.path.join(person_directory, f'{str(feature_id)}.*')
@@ -44,7 +44,7 @@ class FileImagesStorage(ImagesStorage):
         return file_content
 
 
-    async def save(self, person_id: uuid.UUID, image_type: str, feature_id: uuid.UUID, image: bytes) -> None:
+    async def save(self, person_id: uuid.UUID, image_type: str, feature_id: uuid.UUID, image: bytes, transaction_scope = None) -> None:
         person_directory = self.__create_if_not_exists(
             self.__add_base_path_to_path(str(person_id))
         )

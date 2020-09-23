@@ -15,32 +15,40 @@ class SqliteFeaturesStorage(FeaturesStorage):
     def __init__(self, sqlite_file: str):
         self.__sqlite_file: str = sqlite_file
         self.__pooled_connection : aiosqlite.Connection = None
+        
         asyncio.create_task(self.migrations()).add_done_callback(lambda _ : logging.info('Features migrations done'))
 
-    async def save(self, user_id: uuid.UUID, feature_id: uuid.UUID, image_type: str, feature: bytes, created_at: datetime) -> None:
-        if not self.__pooled_connection:
-            self.__pooled_connection = await aiosqlite.connect(self.__sqlite_file)
-            self.__pooled_connection.row_factory = aiosqlite.Row
+    async def save(self, user_id: uuid.UUID, feature_id: uuid.UUID, image_type: str, feature: bytes, created_at: datetime, transaction_scope = None) -> None:
+        pooled_connection = transaction_scope if transaction_scope else self.__pooled_connection
+        
+        if not pooled_connection:
+            pooled_connection = self.__pooled_connection = await aiosqlite.connect(self.__sqlite_file)
+            pooled_connection.row_factory = aiosqlite.Row
 
-        await self.__pooled_connection.execute('insert or replace into "Feature" ("user_id", "feature_id", "image_type", "feature", "created_at") values(?, ?, ?, ?, ?)',
+        await pooled_connection.execute('insert or replace into "Feature" ("user_id", "feature_id", "image_type", "feature", "created_at") values(?, ?, ?, ?, ?)',
             parameters=[str(user_id), str(feature_id), image_type, feature, str(created_at)])
-        await self.__pooled_connection.commit()
+        
+        if not transaction_scope:
+            await pooled_connection.commit()
 
-    async def delete(self, user_id: uuid.UUID, idx: uuid.UUID):
-        if not self.__pooled_connection:
-            self.__pooled_connection = await aiosqlite.connect(self.__sqlite_file)
-            self.__pooled_connection.row_factory = aiosqlite.Row
+    async def delete(self, user_id: uuid.UUID, idx: uuid.UUID, transaction_scope = None):
+        pooled_connection = transaction_scope if transaction_scope else self.__pooled_connection
 
-        await self.__pooled_connection.execute('''
+        if not pooled_connection:
+            pooled_connection = self.__pooled_connection = await aiosqlite.connect(self.__sqlite_file)
+            pooled_connection.row_factory = aiosqlite.Row
+
+        await pooled_connection.execute('''
             PRAGMA foreign_keys = ON;
         ''')
-        await self.__pooled_connection.execute('''
+        await pooled_connection.execute('''
             delete from "Feature"  
             where "user_id"=? and "feature_id"= ?
         ''', parameters=[str(user_id), str(idx)]
         )
 
-        await self.__pooled_connection.commit()
+        if not transaction_scope:
+            await pooled_connection.commit()
 
 
     async def enumerate_for(self, idx : uuid.UUID) -> AsyncIterator[UserFeatures]:
