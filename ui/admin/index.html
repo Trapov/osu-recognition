@@ -191,15 +191,22 @@
     <v-app>
       <v-system-bar>
         <v-container fluid>
-          <v-row align="baseline" justify="end">
-            
-            <v-switch
-              v-model="$vuetify.theme.dark"
-              :prepend-icon="$vuetify.theme.dark ? 'mdi-lightbulb' : 'mdi-lightbulb-outline'"
-            >
-            </v-switch>
-            
+          <v-row class="flex-nowrap" align="baseline" justify="end">
+              
+              <div class="text-body-1 text-truncate">
+                <span> {{ version }} </span> |
+                <span > commit: {{commit}} </span> 
+              </div>
+              <v-spacer > </v-spacer>
+
+              <v-switch
+                v-model="$vuetify.theme.dark"
+                :prepend-icon="$vuetify.theme.dark ? 'mdi-lightbulb' : 'mdi-lightbulb-outline'"
+              >
+              </v-switch>
+              
           </v-row>
+
         </v-container>
       </v-system-bar>
       <v-main>

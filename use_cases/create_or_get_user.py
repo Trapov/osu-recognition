@@ -103,6 +103,7 @@ async def handle(
             if number_of_features <= settings.max_features and distance_to_closest_user <= threshold:
                 feature_id = uuid.uuid4()
 
+                await images_storage.save(closest_user_id, input_image.type, feature_id, input_image.bytes, scope)
                 await users_storage.save(
                     User(
                         idx=closest_user_id,
@@ -120,12 +121,12 @@ async def handle(
                     scope
                 )
                 
-                await images_storage.save(closest_user_id, input_image.type, feature_id, input_image.bytes, scope)
 
                 return closest_user_id
 
         feature_id = uuid.uuid4()
         closest_user_id = uuid.uuid4()
+        await images_storage.save(closest_user_id, input_image.type, feature_id, input_image.bytes, scope)
         await users_storage.save(
             User(
                 idx=closest_user_id,
@@ -141,6 +142,5 @@ async def handle(
                 created_at=datetime.datetime.utcnow()
             ), scope
         )
-        await images_storage.save(closest_user_id, input_image.type, feature_id, input_image.bytes, scope)
 
     return closest_user_id

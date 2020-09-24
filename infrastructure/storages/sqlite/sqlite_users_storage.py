@@ -76,29 +76,27 @@ class SqliteUsersStorage(UsersStorage):
 
 
     async def save(self, user: User, transaction_scope = None) -> None:
-        pooled_connection = transaction_scope if transaction_scope else self.__pooled_connection
-
-        if not pooled_connection:
-            pooled_connection = self.__pooled_connection = await aiosqlite.connect(self.__sqlite_file)
-            pooled_connection.row_factory = aiosqlite.Row
+        pooled_connection = await self.get_pooled_connection_or_transaction_connection(transaction_scope)
 
         await pooled_connection.execute('''
             insert or ignore into "User" ("user_id", "created_at") values(?,?)
         ''', parameters=[str(user.idx), str(user.created_at)]
         )
 
-        features = [(str(user.idx), str(f.idx), f.image_type, f.feature, str(f.created_at)) for f in user.features.features]
+        features = [(str(user.idx), str(f.idx), str(f.idx), f.feature, str(f.created_at)) for f in user.features.features]
         grants = [(str(user.idx), g, str(datetime.datetime.utcnow())) for g in user.grants]
 
         if len(features) > 0:
-            await pooled_connection.executemany('''
-                insert or ignore into "Feature" ("user_id", "feature_id", "image_type", "feature", "created_at") values(?, ?, ?, ?, ?)
-            ''', features)
+            for f in features:
+                await pooled_connection.execute('''
+                    insert or ignore into "Feature" ("user_id", "feature_id", "image_id", "feature", "created_at") values(?, ?, ?, ?, ?)
+                ''', f)
 
         if len(grants) > 0:
-            await pooled_connection.executemany('''
-                insert or ignore into "Grant" ("user_id", "grant", "created_at") values(?, ?, ?)
-            ''', grants)
+            for g in grants:
+                await pooled_connection.execute('''
+                    insert or ignore into "Grant" ("user_id", "grant", "created_at") values(?, ?, ?)
+                ''', g)
 
         if not transaction_scope:
             await pooled_connection.commit()
@@ -120,21 +118,20 @@ class SqliteUsersStorage(UsersStorage):
     async def single_no_features(self, user_id: uuid.UUID) -> User:
         user = None
 
-        if not self.__pooled_connection:
-            self.__pooled_connection = await aiosqlite.connect(self.__sqlite_file)
-            self.__pooled_connection.row_factory = aiosqlite.Row
+        pooled_connection = await self.get_pooled_connection_or_transaction_connection()
 
-        async with self.__pooled_connection.execute('''
+        async with pooled_connection.execute('''
             select 
                 p."user_id",
                 f."feature_id",
-                f."image_type",
+                i."image_type",
                 f."created_at" as "feature_created_at",
                 g."grant",
                 g."created_at" as "grant_created_at",
                 p."created_at" as "user_created_at"
             from "User" p
             join "Feature" f on f."user_id" = p."user_id"
+            join "Image" i on i."image_id" = f."image_id"
             left outer join "Grant" g on g."user_id" = p."user_id"
             where p."user_id" = ?
             order by p."user_id", p."created_at"
@@ -158,15 +155,13 @@ class SqliteUsersStorage(UsersStorage):
         return user
 
     async def enumerate(self, offset: int = None, limit: int = None) -> AsyncIterator[User]:
-        if not self.__pooled_connection:
-            self.__pooled_connection = await aiosqlite.connect(self.__sqlite_file)
-            self.__pooled_connection.row_factory = aiosqlite.Row
+        pooled_connection = await self.get_pooled_connection_or_transaction_connection()
 
-        async with self.__pooled_connection.execute('''
+        async with pooled_connection.execute('''
             select 
                 p."user_id",
                 f."feature_id",
-                f."image_type",
+                i."image_type",
                 f."created_at" as "feature_created_at",
                 g."grant",
                 g."created_at" as "grant_created_at",
@@ -179,6 +174,7 @@ class SqliteUsersStorage(UsersStorage):
                 order by "user_id", "created_at"
                 limit ? offset ?) p
             left outer join "Feature" f on f."user_id" = p."user_id"
+            left outer join "Image" i on i."image_id" = f."image_id"
             left outer join "Grant" g on g."user_id" = p."user_id"
             order by p."user_id", p."created_at"
         ''', parameters=[limit, offset]) as cursor:
@@ -209,6 +205,15 @@ class SqliteUsersStorage(UsersStorage):
                 yield current_user_features
             else:
                 return
+
+    async def get_pooled_connection_or_transaction_connection(self, transaction_scope= None) -> aiosqlite.Connection:
+        pooled_connection = transaction_scope if transaction_scope else self.__pooled_connection
+
+        if not pooled_connection:
+            pooled_connection = self.__pooled_connection = await aiosqlite.connect(self.__sqlite_file)
+            pooled_connection.row_factory = aiosqlite.Row
+        
+        return pooled_connection
 
     async def migrations(self) -> None:
         async with aiosqlite.connect(self.__sqlite_file) as db:

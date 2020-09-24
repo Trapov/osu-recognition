@@ -25,8 +25,8 @@ class SqliteFeaturesStorage(FeaturesStorage):
             pooled_connection = self.__pooled_connection = await aiosqlite.connect(self.__sqlite_file)
             pooled_connection.row_factory = aiosqlite.Row
 
-        await pooled_connection.execute('insert or replace into "Feature" ("user_id", "feature_id", "image_type", "feature", "created_at") values(?, ?, ?, ?, ?)',
-            parameters=[str(user_id), str(feature_id), image_type, feature, str(created_at)])
+        await pooled_connection.execute('insert or replace into "Feature" ("user_id", "feature_id", "image_id", "feature", "created_at") values(?, ?, ?, ?, ?)',
+            parameters=[str(user_id), str(feature_id), str(feature_id), feature, str(created_at)])
         
         if not transaction_scope:
             await pooled_connection.commit()
@@ -58,13 +58,14 @@ class SqliteFeaturesStorage(FeaturesStorage):
 
         async with self.__pooled_connection.execute('''
                 select 
-                    "user_id",
-                    "feature_id",
-                    "image_type",
-                    "feature",
-                    "created_at"
-                from "Feature"
-                where "user_id" = ?
+                    f."user_id",
+                    f."feature_id",
+                    i."image_type",
+                    f."feature",
+                    f."created_at"
+                from "Feature" f
+                join "Image" i on i."image_id" = f."image_id"
+                where f."user_id" = ?
             ''', [str(idx)]) as cursor:
             current_user_features: UserFeatures = None
             async for row in cursor:
@@ -93,12 +94,13 @@ class SqliteFeaturesStorage(FeaturesStorage):
 
         async with self.__pooled_connection.execute('''
                 select 
-                    "user_id",
-                    "feature_id",
-                    "image_type",
-                    "feature",
-                    "created_at"
-                from "Feature"
+                    f."user_id",
+                    f."feature_id",
+                    i."image_type",
+                    f."feature",
+                    f."created_at"
+                from "Feature" f
+                join "Image" i on i."image_id" = f."image_id"
                 order by "user_id"
             ''') as cursor:
             current_user_features: UserFeatures = None

@@ -57,6 +57,8 @@ const vue = new Vue({
   data() {
     return {
       logs: [],
+      commit: '',
+      version: {},
       showPassword: false,
       providedAdminToken: '',
       loading: false,
@@ -234,8 +236,21 @@ const vue = new Vue({
       }
     },
 
+    async getVersion() {
+      try{
+        this.loading = true;
+        const result = await fetch(`/version`);
+        const resultJson = await result.json();
+
+        this.version = resultJson.version;
+        this.commit = resultJson.commit;
+      }
+      finally{
+        this.loading = false;
+      }
+    },
     
-    async getLastLogs(){
+    async getLastLogs() {
       try{
         this.loading = true;
         const result = await fetch(`/logs`, { 
@@ -275,7 +290,7 @@ const vue = new Vue({
     async goToLogs(){
       await this.getLastLogs();
       const refThis = this;
-      await refThis.getMetrics()
+      await refThis.getMetrics();
       setInterval(async function() {
         await refThis.getMetrics()
       }, 60000)
@@ -406,6 +421,8 @@ const vue = new Vue({
 
   },
   async mounted() {
+    await this.getVersion();
+
     if (this.adminToken){
       await this.refreshPage();
     }

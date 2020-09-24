@@ -21,3 +21,6 @@ class AiosqliteTransactionContext(TransactionContext):
 
     async def __aexit__(self, exc_type, exc, tb):
         await self.pooled_connection.commit()
+        await self.pooled_connection.close()
+
+        self.pooled_connection = None

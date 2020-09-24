@@ -1,7 +1,8 @@
 from fastapi import FastAPI, File, UploadFile, Query, Path, HTTPException, Depends
 from fastapi.security import HTTPBearer
-from fastapi.responses import Response
+from fastapi.responses import Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
+import io
 from os import environ, getpid
 import uuid, logging.config
 from uuid import UUID
@@ -34,6 +35,9 @@ bearer = HTTPBearer()
 
 app = FastAPI(title='REST-API. Recognition-Auth', version="1.0.0")
 
+
+from dotenv import load_dotenv
+load_dotenv()
 
 app.mount('/client', StaticFiles(directory='./ui/client', check_dir=True, html=True), 'ui_client')
 app.mount('/admin', StaticFiles(directory='./ui/admin', check_dir=True, html=True), 'ui_admin')
@@ -78,6 +82,14 @@ ADMIN_TOKEN = environ.get('ADMIN_TOKEN', 'HACK')
 def raise_if_not_admin(credentials : str) -> None:
     if credentials != ADMIN_TOKEN:
         raise HTTPException(401, 'Not authorized')
+
+@app.get("/version", tags=['version'], status_code=200)
+async def get_version() -> dict:
+    return {
+        'commit': environ.get('COMMIT_HASH', ''),
+        'version': environ.get('VERSION', ''),
+        'commit_url': environ.get('COMMIT_URL', '')
+    }
 
 @app.get("/logs", tags=['logs'], status_code=200)
 async def logs_get(*, token: HTTPBearer = Depends(bearer)) -> dict:
@@ -152,7 +164,7 @@ async def path_link_user_feature(*, token: HTTPBearer = Depends(bearer), link_bi
         SINGLETON_CONTAINER.images_storage,
         SINGLETON_CONTAINER.users_storage,
         SINGLETON_CONTAINER.features_storage,
-        SINGLETON_CONTAINER.transaction_context
+        SINGLETON_CONTAINER.transaction_context_factory()
     )
 
     return Response(status_code=200)
@@ -167,7 +179,7 @@ async def patch_link_user(*, token: HTTPBearer = Depends(bearer), link_binding: 
         SINGLETON_CONTAINER.images_storage,
         SINGLETON_CONTAINER.users_storage,
         SINGLETON_CONTAINER.features_storage,
-        SINGLETON_CONTAINER.transaction_context
+        SINGLETON_CONTAINER.transaction_context_factory()
     )
 
     return Response(status_code=200)
@@ -180,7 +192,7 @@ async def delete_iser(*, idx: uuid.UUID, token: HTTPBearer = Depends(bearer)):
         user_id=idx,
         images_storage=SINGLETON_CONTAINER.images_storage,
         users_storage=SINGLETON_CONTAINER.users_storage,
-        transaction_context=SINGLETON_CONTAINER.transaction_context
+        transaction_context=SINGLETON_CONTAINER.transaction_context_factory()
     )
     
     return Response(status_code=200)
@@ -199,7 +211,7 @@ async def login_post(*, file: UploadFile  = File(...)):
             SINGLETON_CONTAINER.users_storage,
             SINGLETON_CONTAINER.recognition_settings_storage,
             SINGLETON_CONTAINER.images_storage,
-            SINGLETON_CONTAINER.transaction_context)
+            SINGLETON_CONTAINER.transaction_context_factory())
 
         token = await to_token_grants.handle(user_id, SINGLETON_CONTAINER.users_storage, SINGLETON_CONTAINER.grants_crypto)
         
@@ -221,7 +233,7 @@ async def feature_delete(*, user_id: uuid.UUID, feature_id: uuid.UUID, token: HT
         feature_id=feature_id,
         images_storage=SINGLETON_CONTAINER.images_storage,
         features_storage=SINGLETON_CONTAINER.features_storage,
-        transaction_context=SINGLETON_CONTAINER.transaction_context
+        transaction_context=SINGLETON_CONTAINER.transaction_context_factory()
     )
 
     return Response(status_code=200)
@@ -318,6 +330,7 @@ async def users_get(*, token: HTTPBearer = Depends(bearer), offset: int = Query(
         ]
     }
 
+
 @app.get("/me", tags=['user'], status_code=200)
 async def user_get_me(*, token: HTTPBearer = Depends(bearer)) -> User:
     user = await get_single_user_from_token.handle(token=token.credentials, users_storage=SINGLETON_CONTAINER.users_storage, grants_crypto=SINGLETON_CONTAINER.grants_crypto)
@@ -342,5 +355,12 @@ async def user_get_me(*, token: HTTPBearer = Depends(bearer)) -> User:
         'created_at': user.created_at
     }
 
-app.mount('/users', StaticFiles(directory="./images", check_dir=False), 'person_faces')
+@app.get("/users/{user_id}/{image_id}", tags=["users"], status_code=200)
+async def user_get_image(*, user_id: UUID, image_id: str):
+    img_id, img_type = image_id.split('.')
+    img = await SINGLETON_CONTAINER.images_storage.get(user_id, img_id)
+
+    return StreamingResponse(io.BytesIO(img), status_code=200,media_type=f'image/{img_type}')
+
+# app.mount('/users', StaticFiles(directory="./images", check_dir=False), 'person_faces')
 app.mount('/', StaticFiles(directory='./ui', check_dir=True, html=True), 'ui_entry')

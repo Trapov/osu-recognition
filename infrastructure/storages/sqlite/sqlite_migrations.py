@@ -14,8 +14,9 @@ migration_scripts = [
     create table if not exists "Image" (
         "image_id" text primary key,
         "image_type" text,
+        "image" BLOB not null,
         "created_at" text
-    )
+    );
 ''',
 '''
     create table if not exists "Grant" (
@@ -23,23 +24,24 @@ migration_scripts = [
         "grant" text not null,
         "created_at" text not null,
         primary key ("user_id", "grant"),
-        foreign key ("user_id")
-        REFERENCES "User" ("user_id")
-        on delete cascade
-        on update no action
+        foreign key ("user_id") REFERENCES "User" ("user_id")
+            on delete cascade
+            on update no action
     );
 ''',
 '''
     create table if not exists "Feature" (
         "feature_id" text primary key,
         "user_id" text not null,
-        "image_type" text not null,
+        "image_id" text not null,
         "feature" BLOB not null,
         "created_at" text not null,
-        foreign key ("user_id")
-        REFERENCES "User" ("user_id")
-        on delete cascade
-        on update no action
+        foreign key ("user_id") REFERENCES "User" ("user_id") 
+            on delete cascade 
+            on update no action
+        foreign key ("image_id") REFERENCES "Image" ("image_id") 
+            on delete cascade 
+            on update no action
     );
 ''',
 '''
@@ -50,12 +52,18 @@ migration_scripts = [
         "user_id_to" text not null,
         "created_at" text not null,
         "updated_at" text nll,
-        foreign key ("feature_id_from") REFERENCES "Feature" ("feature_id"),
-        foreign key ("feature_id_to") REFERENCES "Feature" ("feature_id"),
-        foreign key ("user_id_from") REFERENCES "User" ("user_id"),
+        foreign key ("feature_id_from") REFERENCES "Feature" ("feature_id")
+            on delete cascade
+            on update no action
+        foreign key ("feature_id_to") REFERENCES "Feature" ("feature_id")
+            on delete cascade
+            on update no action
+        foreign key ("user_id_from") REFERENCES "User" ("user_id")
+            on delete cascade
+            on update no action
         foreign key ("user_id_to") REFERENCES "User" ("user_id")
-        on delete cascade
-        on update no action
+            on delete cascade
+            on update no action
     );
 '''
 ,
