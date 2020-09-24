@@ -1,11 +1,14 @@
-  
-# This is a sample Dockerfile you can modify to deploy your own app based on face_recognition
+FROM dmitriyafonin/osu-recognition-base
 
-FROM python:3.8-slim-stretch
+ARG COMMIT_HASH
+ARG VERSION
+
+ENV COMMIT_HASH=${COMMIT_HASH}
+ENV VERSION=${VERSION}
 
 COPY . /app
 WORKDIR /app
 
 RUN pip install -r requirements.txt
 
-CMD [ "python" "run-rest-api.py"]
+CMD [ "python", "run-rest-api.py"]
