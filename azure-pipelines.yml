@@ -1,4 +1,3 @@
-# Docker
 # Build a Docker image 
 # https://docs.microsoft.com/azure/devops/pipelines/languages/docker
 
@@ -25,7 +24,7 @@ stages:
       inputs:
         containerRegistry: 'Heroku Registry'
         repository: 'osu-recognition/web'
-        command: 'build'
+        command: 'buildAndPush'
         Dockerfile: '**/Dockerfile'
         tags: '$(tag)'
         arguments: '--build-arg COMMIT_HASH=$(Build.SourceVersion) --build-arg VERSION=$(Build.SourceBranchName)'
