@@ -43,7 +43,7 @@ stages:
         script: '(
   echo "$(HEROKU_CREDENTIALS_EMAIL)"
   echo "$(HEROKU_CREDENTIALS_PASSWORD)"
-) | heroku login --verbose'
+) | heroku auth:login'
         noProfile: false
         noRc: false
 
