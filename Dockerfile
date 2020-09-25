@@ -12,5 +12,6 @@ COPY . /app
 WORKDIR /app
 
 RUN pip install -r requirements.txt
+RUN chmod +x ./start.sh
 
 ENTRYPOINT [ "./start.sh" ]
