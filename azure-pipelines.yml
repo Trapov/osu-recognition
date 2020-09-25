@@ -39,8 +39,10 @@ stages:
       displayName: "Heroku login"
       inputs:
         targetType: inline
-        script: 'heroku container:login'
-
+        script: '(
+  echo "$HEROKU_CREDENTIALS_EMAIL"
+  echo "$HEROKU_CREDENTIALS_PASSWORD"
+) | heroku login'
     - task: Bash@3
       displayName: "Heroky deploy"
       inputs:
