@@ -23,6 +23,8 @@ stages:
     - task: Docker@2
       displayName: Build an image
       inputs:
+        containerRegistry: 'Heroku Registry'
+        repository: 'osu-recognition/web'
         command: 'build'
         Dockerfile: '**/Dockerfile'
         tags: '$(tag)'
