@@ -26,4 +26,4 @@ stages:
         command: 'build'
         Dockerfile: '**/Dockerfile'
         tags: '$(tag)'
-        arguments: '--build-arg COMMIT_HASH=$(Build.SourceVersion) VERSION=$(Build.SourceBranchName)'
+        arguments: '--build-arg COMMIT_HASH=$(Build.SourceVersion) --build-arg VERSION=$(Build.SourceBranchName)'
