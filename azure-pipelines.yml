@@ -41,9 +41,10 @@ stages:
       inputs:
         targetType: 'inline'
         script: '(
-  echo "$(HEROKU_CREDENTIALS_EMAIL)"
-  echo "$(HEROKU_CREDENTIALS_PASSWORD)"
-) | heroku auth:login'
+  echo "machine api.heroku.com"
+  echo " login $(HEROKU_CREDENTIALS_EMAIL)"
+  echo " password $(HEROKU_CREDENTIALS_PASSWORD)"
+) >> ~/.netrc && heroku auth:login'
         noProfile: false
         noRc: false
 
