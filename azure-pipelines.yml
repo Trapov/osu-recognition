@@ -24,7 +24,14 @@ stages:
       inputs:
         containerRegistry: 'Heroku Registry'
         repository: 'osu-recognition/web'
-        command: 'buildAndPush'
+        command: 'build'
         Dockerfile: '**/Dockerfile'
         tags: '$(tag)'
         arguments: '--build-arg COMMIT_HASH=$(Build.SourceVersion) --build-arg VERSION=$(Build.SourceBranchName)'
+    - task: Docker@2
+      displayName: Push an image
+      inputs:
+        containerRegistry: 'Heroku Registry'
+        repository: 'osu-recognition/web'
+        command: 'push'
+        tags: '$(tag)'
