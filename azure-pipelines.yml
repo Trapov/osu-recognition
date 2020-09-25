@@ -38,8 +38,11 @@ stages:
     - task: Bash@3
       displayName: "Heroku login"
       inputs:
-        script: heroku container:login
+        targetType: inline
+        script: 'heroku container:login'
+
     - task: Bash@3
       displayName: "Heroky deploy"
       inputs:
-        script: heroku container:release web -a osu-recognition
+        targetType: inline
+        script: 'heroku container:release web -a osu-recognition'
