@@ -39,7 +39,7 @@ stages:
       displayName: "Heroku login"
       inputs:
         targetType: 'inline'
-        script: 'heroku container:login -v'
+        script: 'heroku container:login --verbose'
         noProfile: false
         noRc: false
     - task: Bash@3
