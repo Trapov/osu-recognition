@@ -39,7 +39,7 @@ stages:
       displayName: "Heroku login"
       inputs:
         targetType: inline
-        script: 'heroku container:login'
+        script: 'heroku container:login -v'
     - task: Bash@3
       displayName: "Heroku deploy"
       inputs:
