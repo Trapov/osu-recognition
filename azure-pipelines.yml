@@ -35,6 +35,18 @@ stages:
         repository: 'osu-recognition/web'
         command: 'push'
         tags: 'release'
+
+    - task: Bash@3
+      displayName: "Heroku login"
+      inputs:
+        targetType: 'inline'
+        script: '(
+  echo "$(HEROKU_CREDENTIALS_EMAIL)"
+  echo "$(HEROKU_CREDENTIALS_PASSWORD)"
+) | heroku login --verbose'
+        noProfile: false
+        noRc: false
+
     - task: Bash@3
       displayName: "Heroku login"
       inputs:
