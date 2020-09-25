@@ -13,4 +13,4 @@ WORKDIR /app
 
 RUN pip install -r requirements.txt
 
-CMD [ "uvicorn", "runnable_packages.rest.api:app" ,"-h", "0.0.0.0" , "-port" "80", "-w", "4" ]
+ENTRYPOINT [ "./start.sh" ]
