@@ -28,33 +28,3 @@ stages:
         Dockerfile: '**/Dockerfile'
         tags: 'release'
         arguments: '--build-arg COMMIT_HASH=$(Build.SourceVersion) --build-arg VERSION=$(Build.SourceBranchName)'
-    - task: Docker@2
-      displayName: Push an image
-      inputs:
-        containerRegistry: 'Heroku Registry'
-        repository: 'osu-recognition/web'
-        command: 'push'
-        tags: 'release'
-
-    - task: Bash@3
-      displayName: "Heroku login"
-      inputs:
-        targetType: 'inline'
-        script: 'echo -e "machine api.heroku.com \n login $(HEROKU_CREDENTIALS_EMAIL)\n password $(HEROKU_CREDENTIALS_PASSWORD)" >> ~/.netrc && heroku auth:login'
-        noProfile: false
-        noRc: false
-
-    - task: Bash@3
-      displayName: "Heroku login"
-      inputs:
-        targetType: 'inline'
-        script: 'heroku container:login --verbose'
-        noProfile: false
-        noRc: false
-    - task: Bash@3
-      displayName: "Heroku deploy"
-      inputs:
-        targetType: 'inline'
-        script: 'heroku container:release web -a osu-recognition'
-        noProfile: false
-        noRc: false
