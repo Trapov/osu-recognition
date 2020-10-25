@@ -54,6 +54,15 @@
           <web-cam @token-obtained="token=$event.token" v-else>
           </web-cam>
 
+          <v-footer
+            absolute
+            padless="padless"
+            class="font-weight-medium"
+          >
+            <v-btn block text href="https://trapov.github.io" target="_blank">
+              made by @trapov me
+            </v-btn>
+          </v-footer>
         </v-container>
       </v-main>
     </v-app>
